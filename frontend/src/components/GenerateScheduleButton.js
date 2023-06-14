@@ -1,10 +1,8 @@
 import React from 'react';
-import { useDispatch } from 'react-redux';
-import { generateRandomSchedule } from '../actions';
+import { connect, useDispatch } from 'react-redux';
+import { generateRandomSchedule, otherAction, setFirstCall } from '../actions';
 
-
-const GenerateScheduleButton = ({ selectedDate }) => {
-  console.log('generateScheduleButton selected date: ', selectedDate);
+const GenerateScheduleButton = ({ selectedDate, firstCallAssignment }) => {
   const dispatch = useDispatch();
 
   const handleClick = () => {
@@ -12,6 +10,10 @@ const GenerateScheduleButton = ({ selectedDate }) => {
     const month = parseInt(selectedDate.split('-')[1]) - 1;
 
     dispatch(generateRandomSchedule(new Date(year, month)));
+
+    if (firstCallAssignment) {
+      dispatch(setFirstCall(firstCallAssignment));
+    }
   };
 
   return (
@@ -19,4 +21,8 @@ const GenerateScheduleButton = ({ selectedDate }) => {
   );
 };
 
-export default GenerateScheduleButton;
+const mapStateToProps = (state) => ({
+  firstCallAssignment: state.schedule.firstCallAssignments, // Adjust this line according to your state structure
+});
+
+export default connect(mapStateToProps)(GenerateScheduleButton);

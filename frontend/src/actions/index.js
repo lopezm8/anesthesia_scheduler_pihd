@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FETCH_ANESTHESIOLOGISTS, ADD_ANESTHESIOLOGIST, SET_SCHEDULES, FETCH_SCHEDULES } from './types';
+import { FETCH_ANESTHESIOLOGISTS, ADD_ANESTHESIOLOGIST, SET_SCHEDULES, FETCH_SCHEDULES, SET_FIRST_CALL, SET_SELECTED_DATE } from './types';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -13,6 +13,9 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
   const anesthesiologists = getState().anesthesiologist;
   const vacations = getState().vacations;
+
+  // Get the first call assignments from the state.
+  const firstCallAssignments = getState().schedule.firstCallAssignments;
 
   console.log(anesthesiologists);
 
@@ -59,6 +62,17 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
     const isWeekday = date.getDay() >= 1 && date.getDay() <= 5;
 
+    let firstCallAssignment;
+    if (firstCallAssignments) {
+      firstCallAssignment = firstCallAssignments.find(assignment => {
+        const assignmentDate = new Date(assignment.date);
+        return assignmentDate.getDate() === date.getDate() &&
+          assignmentDate.getMonth() === date.getMonth() &&
+          assignmentDate.getFullYear() === date.getFullYear();
+      });
+    }
+
+    
     let onCallAnesthesiologists = [];
 
     console.log('vacations', vacations);
@@ -75,10 +89,16 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
     if (isWeekday) {
       if (date.getDay() === 1) { // If it's Monday
-        console.log('Monday\'s date:', date, 'Sunday First Call:', sundayFirstCall);
-        eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== sundayFirstCall);
-        // Reorder the list of eligibleAnesthesiologists so the secondCall from Sunday is last
-        eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== previousSecondCall).concat(previousSecondCall ? [previousSecondCall] : []);
+        // Here we have to consider firstCallAssignments
+        if(firstCallAssignments[date.toISOString().split('T')[0]]){
+          const assignedAnesthesiologist = firstCallAssignments[date.toISOString().split('T')[0]];
+          eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== assignedAnesthesiologist);
+          eligibleAnesthesiologists.unshift(assignedAnesthesiologist); // Assign him at the beginning of the array
+        } else {
+          eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== sundayFirstCall);
+          // Reorder the list of eligibleAnesthesiologists so the secondCall from Sunday is last
+          eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== previousSecondCall).concat(previousSecondCall ? [previousSecondCall] : []);
+        }
       } else {
         eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== previousFirstCall);
       }
@@ -87,13 +107,19 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
         return anesthesiologist !== previousSecondCall && anesthesiologist !== previousThirdCall;
       });
 
-       // Shuffle eligibleAnesthesiologists again before assigning to onCallAnesthesiologists
-      for (let i = eligibleAnesthesiologists.length - 1; i > 0; i--) {
-        let j = Math.floor(Math.random() * (i + 1));
-        [eligibleAnesthesiologists[i], eligibleAnesthesiologists[j]] = [eligibleAnesthesiologists[j], eligibleAnesthesiologists[i]];
-      }
+      // Assign the first call from the assignment if it exists, // New code
+      // otherwise select randomly from eligible anesthesiologists. // New code
+      if (firstCallAssignment) {
+        onCallAnesthesiologists = [firstCallAssignment.anesthesiologist, ...eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== firstCallAssignment.anesthesiologist)];
+      } else {
+        // Shuffle eligibleAnesthesiologists again before assigning to onCallAnesthesiologists
+        for (let i = eligibleAnesthesiologists.length - 1; i > 0; i--) {
+          let j = Math.floor(Math.random() * (i + 1));
+          [eligibleAnesthesiologists[i], eligibleAnesthesiologists[j]] = [eligibleAnesthesiologists[j], eligibleAnesthesiologists[i]];
+        }
 
-      onCallAnesthesiologists = [...eligibleAnesthesiologists];
+        onCallAnesthesiologists = [...eligibleAnesthesiologists];
+      }
 
       if(previousThirdCall && anesthesiologists.includes(previousThirdCall)) {
         onCallAnesthesiologists.push(previousThirdCall);
@@ -274,3 +300,13 @@ export const addVacation = (anesthesiologist, startDate, endDate) => {
     endDate: adjustedEndDate.toISOString().split('T')[0],
   };
 };
+
+export const setFirstCall = (anesthesiologistId, date) => ({
+  type: SET_FIRST_CALL,
+  payload: { anesthesiologistId, date },
+});
+
+export const setSelectedDate = (date) => ({
+  type: SET_SELECTED_DATE,
+  date,
+});

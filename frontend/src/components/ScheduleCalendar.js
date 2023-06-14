@@ -9,7 +9,7 @@ import './ScheduleCalendar.css';
 
 const localizer = globalizeLocalizer(globalize);
 
-const ScheduleCalendar = ({ events, selectedDate }) => {
+const ScheduleCalendar = ({ events, selectedDate, firstCallAssignments }) => {
   console.log('selected date ScheduleCalendar: ', selectedDate);
   console.log(events); // log the events prop here
 
@@ -67,7 +67,7 @@ const mapStateToProps = state => {
     });    
   });
 
-  return { events, vacations: state.vacations };
+  return { events, vacations: state.vacations, firstCallAssignments: state.schedule.firstCallAssignments };
 };
 
 
