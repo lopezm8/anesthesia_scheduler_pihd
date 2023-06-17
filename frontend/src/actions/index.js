@@ -81,7 +81,6 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
           firstCallAssignmentsMap[firstCallAssignment.date] = firstCallAssignment;
           // Remove the used assignment from the list.
           firstCallAssignments = firstCallAssignments.filter(assignment => assignment !== firstCallAssignment);
-          continue;  // skip this iteration of the loop, since a first call has already been assigned for this day
         }
       }
     }
