@@ -15,7 +15,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   const vacations = getState().vacations;
 
   // Get the first call assignments from the state.
-  const firstCallAssignments = getState().schedule.firstCallAssignments;
+  let firstCallAssignments = getState().schedule.firstCallAssignments;
 
   console.log(anesthesiologists);
 
@@ -27,11 +27,12 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   let previousSecondCall = null;
   let previousThirdCall = null;
 
+  let firstCallAssignmentsMap = {};
+
   let firstCallOfWeek = []; // Array to keep track of anesthesiologists who have been on first call during the week
   let weekendCallAnesthesiologists = []; // Array to keep track of anesthesiologists who have been on weekend call
   let eligibleAnesthesiologists = [];
-
-  let weekendQueue = [...anesthesiologists]; // Make a copy of all anesthesiologists for the weekend queue
+  let weekendQueue = [...anesthesiologists]; // Copy of all anesthesiologists for the weekend queue
 
   let weekendCounts = anesthesiologists.reduce((acc, curr) => {
     acc[curr] = { count: 0, dates: [] };
@@ -53,6 +54,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   let sundayFirstCall = null;
 
   for (let i = 0; i < totalDays; i++) {
+    let preserveFirstCall = false;
     if (date.getDay() === 0) { // If it's Sunday, update sundayFirstCall
       sundayFirstCall = previousFirstCall;
     }
@@ -64,13 +66,26 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
     let firstCallAssignment;
     if (firstCallAssignments) {
-      firstCallAssignment = firstCallAssignments.find(assignment => {
+      console.log(`generateRandomSchedule - firstCallAssignments: ${JSON.stringify(firstCallAssignments)}`);
+      let firstCallAssignment = firstCallAssignments.find(assignment => {
         const assignmentDate = new Date(assignment.date);
         return assignmentDate.getDate() === date.getDate() &&
           assignmentDate.getMonth() === date.getMonth() &&
           assignmentDate.getFullYear() === date.getFullYear();
       });
+      if (firstCallAssignment) {
+        if (firstCallAssignmentsMap[firstCallAssignment.date]) {
+          console.warn(`Duplicate first call assignment found for date ${firstCallAssignment.date}`);
+          firstCallAssignment = null;
+        } else {
+          firstCallAssignmentsMap[firstCallAssignment.date] = firstCallAssignment;
+          // Remove the used assignment from the list.
+          firstCallAssignments = firstCallAssignments.filter(assignment => assignment !== firstCallAssignment);
+          continue;  // skip this iteration of the loop, since a first call has already been assigned for this day
+        }
+      }
     }
+    
 
     
     let onCallAnesthesiologists = [];
@@ -87,39 +102,70 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
       return !isOnVacation;
     });
 
+    // If it's not the first day and a anesthesiologist is set to first call tomorrow, make them ineligible for today
+    if (i !== 0) {
+      const tomorrowFirstCallAssignment = firstCallAssignments.find(assignment => {
+        const assignmentDate = new Date(assignment.date);
+        return assignmentDate.getDate() === date.getDate() + 1 &&
+          assignmentDate.getMonth() === date.getMonth() &&
+          assignmentDate.getFullYear() === date.getFullYear();
+      });
+      
+      if (tomorrowFirstCallAssignment) {
+        eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== tomorrowFirstCallAssignment.anesthesiologist);
+      }
+    }
+
     if (isWeekday) {
       if (date.getDay() === 1) { // If it's Monday
-        // Here we have to consider firstCallAssignments
-        if(firstCallAssignments[date.toISOString().split('T')[0]]){
-          const assignedAnesthesiologist = firstCallAssignments[date.toISOString().split('T')[0]];
-          eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== assignedAnesthesiologist);
-          eligibleAnesthesiologists.unshift(assignedAnesthesiologist); // Assign him at the beginning of the array
+        if(firstCallAssignment && eligibleAnesthesiologists.includes(firstCallAssignment.anesthesiologist)){
+          // Remove the assigned anesthesiologist from the eligible list
+          eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== firstCallAssignment.anesthesiologist);
+          // Add the assigned anesthesiologist at the beginning of the array
+          eligibleAnesthesiologists.unshift(firstCallAssignment.anesthesiologist);
         } else {
+          // Remove the Sunday's first call from the eligible list for Monday
           eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== sundayFirstCall);
           // Reorder the list of eligibleAnesthesiologists so the secondCall from Sunday is last
           eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== previousSecondCall).concat(previousSecondCall ? [previousSecondCall] : []);
         }
       } else {
+        // For other weekdays, remove the previous day's first call from the eligible list
         eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== previousFirstCall);
-      }
+      }      
 
       eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
         return anesthesiologist !== previousSecondCall && anesthesiologist !== previousThirdCall;
       });
 
-      // Assign the first call from the assignment if it exists, // New code
-      // otherwise select randomly from eligible anesthesiologists. // New code
-      if (firstCallAssignment) {
-        onCallAnesthesiologists = [firstCallAssignment.anesthesiologist, ...eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== firstCallAssignment.anesthesiologist)];
-      } else {
-        // Shuffle eligibleAnesthesiologists again before assigning to onCallAnesthesiologists
-        for (let i = eligibleAnesthesiologists.length - 1; i > 0; i--) {
-          let j = Math.floor(Math.random() * (i + 1));
-          [eligibleAnesthesiologists[i], eligibleAnesthesiologists[j]] = [eligibleAnesthesiologists[j], eligibleAnesthesiologists[i]];
-        }
+      // If there is a first call assignment and the assigned anesthesiologist is eligible
+      let firstCallAnesthesiologist = null;
 
-        onCallAnesthesiologists = [...eligibleAnesthesiologists];
+      if (firstCallAssignment) {
+        firstCallAnesthesiologist = eligibleAnesthesiologists.find(anesthesiologist => anesthesiologist === firstCallAssignment.anesthesiologist);
+        
+        if (firstCallAnesthesiologist) {
+          eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== firstCallAnesthesiologist);
+          preserveFirstCall = true; // If we have a pre-assigned first call, then we set this to true
+        }
       }
+
+      // Shuffle the remaining eligible anesthesiologists
+      for (let i = eligibleAnesthesiologists.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [eligibleAnesthesiologists[i], eligibleAnesthesiologists[j]] = [eligibleAnesthesiologists[j], eligibleAnesthesiologists[i]];
+      }
+
+      // Add the shuffled eligible anesthesiologists to the onCall list
+      onCallAnesthesiologists.push(...eligibleAnesthesiologists);
+
+      // Add the assigned first call anesthesiologist at the start of the onCall list
+      if (firstCallAnesthesiologist) {
+        onCallAnesthesiologists.unshift(firstCallAnesthesiologist);
+      }
+
+
+
 
       if(previousThirdCall && anesthesiologists.includes(previousThirdCall)) {
         onCallAnesthesiologists.push(previousThirdCall);
@@ -130,10 +176,11 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
       }
 
       // Swap first call if anesthesiologist is scheduled for the second time during the week
-      if (firstCallOfWeek.includes(onCallAnesthesiologists[0])) {
-        const replacement = onCallAnesthesiologists.find((anesthesiologist, index) => {
-          return !firstCallOfWeek.includes(anesthesiologist) && index > 0;
-        });
+      if (!preserveFirstCall) { // Skip this block if preserveFirstCall is true
+        if (!preserveFirstCall && firstCallOfWeek.includes(onCallAnesthesiologists[0])) {
+          const replacement = onCallAnesthesiologists.find((anesthesiologist, index) => {
+            return !firstCallOfWeek.includes(anesthesiologist) && index > 0;
+          });
 
         if (replacement) {
           const replacementIndex = onCallAnesthesiologists.indexOf(replacement);
@@ -150,8 +197,22 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
           }
         }
       }
+    }
 
       firstCallOfWeek.push(onCallAnesthesiologists[0]);
+
+      // Check if first call assignment was not correctly assigned due to weekend call
+      if (firstCallAssignment) {
+        const firstCallAnesthesiologist = onCallAnesthesiologists.find(anesthesiologist => anesthesiologist === firstCallAssignment.anesthesiologist);
+        if (firstCallAnesthesiologist) {
+          const index = onCallAnesthesiologists.indexOf(firstCallAnesthesiologist);
+          if (index > -1) {
+            [onCallAnesthesiologists[0], onCallAnesthesiologists[index]] = [onCallAnesthesiologists[index], onCallAnesthesiologists[0]];
+          }
+        } else {
+          console.warn(`Could not find assigned first call anesthesiologist ${firstCallAssignment.anesthesiologist} in list of on-call anesthesiologists for ${firstCallAssignment.date}`);
+        }
+      }
 
       if(date.getDay() === 5) { // If it's Friday
         // Get the upcoming Saturday first call anesthesiologist
@@ -301,10 +362,14 @@ export const addVacation = (anesthesiologist, startDate, endDate) => {
   };
 };
 
-export const setFirstCall = (anesthesiologistId, date) => ({
-  type: SET_FIRST_CALL,
-  payload: { anesthesiologistId, date },
-});
+export const setFirstCall = (anesthesiologistId, date) => {
+  console.log(`setFirstCall in actions index.js - anesthesiologistId: ${anesthesiologistId}, date: ${date}`);
+  return {
+    type: SET_FIRST_CALL,
+    payload: { anesthesiologistId, date },
+  };
+};
+
 
 export const setSelectedDate = (date) => ({
   type: SET_SELECTED_DATE,

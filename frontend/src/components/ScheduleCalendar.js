@@ -11,18 +11,18 @@ const localizer = globalizeLocalizer(globalize);
 
 const ScheduleCalendar = ({ events, selectedDate, firstCallAssignments }) => {
   console.log('selected date ScheduleCalendar: ', selectedDate);
-  console.log(events); // log the events prop here
+  console.log(events);
 
   const [currentDate, setCurrentDate] = React.useState(() => {
     const date = new Date(selectedDate);
-    date.setDate(date.getDate() + 1); // add one day
+    date.setDate(date.getDate() + 1);
     return date;
   });
 
   useEffect(() => {
     console.log('selected date ScheduleCalendar2: ', selectedDate);
     const date = new Date(selectedDate);
-    date.setDate(date.getDate() + 1); // add one day
+    date.setDate(date.getDate() + 1);
     setCurrentDate(date);
   }, [selectedDate]);
 
@@ -35,7 +35,7 @@ const ScheduleCalendar = ({ events, selectedDate, firstCallAssignments }) => {
   return (
     <div>
       <Calendar
-        key={currentDate}  // add this line
+        key={currentDate}  
         localizer={localizer}
         events={events}
         style={{ height: "150vh" }}
@@ -48,13 +48,35 @@ const ScheduleCalendar = ({ events, selectedDate, firstCallAssignments }) => {
 
 
 const mapStateToProps = state => {
-  console.log(state);  // log the entire state
+  console.log(state);
 
   // Group schedules by the on_call_date
-  const schedulesByDate = groupBy(state.schedule.schedules, 'on_call_date'); // change from state.schedules to state.schedule.schedules
+  const schedulesByDate = groupBy(state.schedule.schedules, 'on_call_date');
 
   // Map over each group and assign call numbers
-  const events = Object.values(schedulesByDate).flatMap((schedulesForOneDay, index) => {
+  const regularEvents = Object.values(schedulesByDate).flatMap((schedulesForOneDay, index) => {
+
+    // Sort schedulesForOneDay by the firstCallAssignments
+    schedulesForOneDay.sort((a, b) => {
+      const isAOnFirstCall = state.schedule.firstCallAssignments.some(assignment =>
+        assignment.date === a.on_call_date &&
+        assignment.anesthesiologistId === a.anesthesiologist
+      );
+
+      const isBOnFirstCall = state.schedule.firstCallAssignments.some(assignment =>
+        assignment.date === b.on_call_date &&
+        assignment.anesthesiologistId === b.anesthesiologist
+      );
+
+      if (isAOnFirstCall && !isBOnFirstCall) {
+        return -1;
+      } else if (!isAOnFirstCall && isBOnFirstCall) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+
     return schedulesForOneDay.map((schedule, index) => {
       const [year, month, day] = schedule.on_call_date.split("-");
       return {
@@ -64,11 +86,27 @@ const mapStateToProps = state => {
         end: new Date(year, month - 1, day),
         allDay: true,
       };
-    });    
+    }).sort((a, b) => a.callNumber - b.callNumber);
   });
 
+
+
+  const firstCallEvents = state.schedule.firstCallAssignments.map(assignment => {
+    const [year, month, day] = assignment.date.split("-");
+    return {
+      title: assignment.anesthesiologistId,
+      start: new Date(year, month - 1, day),
+      end: new Date(year, month - 1, day),
+      allDay: true,
+    };
+  });
+
+  const events = [...regularEvents, ...firstCallEvents].sort((a, b) => a.start - b.start);
+
   return { events, vacations: state.vacations, firstCallAssignments: state.schedule.firstCallAssignments };
+
 };
+
 
 
 

@@ -1,46 +1,45 @@
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { setFirstCall } from '../actions'; // This action needs to be defined
+import { useSelector, useDispatch } from 'react-redux';
+import { setFirstCall } from './actions';
 
-const FirstCallForm = () => {
+function AddFirstCallForm() {
   const dispatch = useDispatch();
+
+  const [selectedDate, setSelectedDate] = useState(null);
   const [selectedAnesthesiologist, setSelectedAnesthesiologist] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
 
   const anesthesiologists = useSelector(state => state.anesthesiologists);
 
-  const handleAnesthesiologistChange = (event) => {
-    setSelectedAnesthesiologist(event.target.value);
-  };
-
-  const handleDateChange = (event) => {
-    setSelectedDate(event.target.value);
-  };
-
   const handleSubmit = (event) => {
     event.preventDefault();
-    dispatch(setFirstCall(selectedAnesthesiologist, selectedDate));
+    
+    if (selectedDate && selectedAnesthesiologist) {
+      dispatch(setFirstCall(selectedAnesthesiologist, selectedDate));
+    } else {
+      alert('Please select a date and an anesthesiologist');
+    }
   };
 
   return (
     <form onSubmit={handleSubmit}>
       <label>
         Anesthesiologist:
-        <select value={selectedAnesthesiologist} onChange={handleAnesthesiologistChange}>
-          {anesthesiologists.map(anesthesiologist => (
+        <select value={selectedAnesthesiologist} onChange={e => setSelectedAnesthesiologist(e.target.value)}>
+          <option value="">Select...</option>
+          {anesthesiologists.map(anesthesiologist =>
             <option key={anesthesiologist.id} value={anesthesiologist.id}>
               {anesthesiologist.name}
             </option>
-          ))}
+          )}
         </select>
       </label>
       <label>
         Date:
-        <input type="date" value={selectedDate} onChange={handleDateChange} />
+        <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />
       </label>
-      <button type="submit">Set First Call</button>
+      <input type="submit" value="Submit" />
     </form>
   );
-};
+}
 
-export default FirstCallForm;
+export default AddFirstCallForm;

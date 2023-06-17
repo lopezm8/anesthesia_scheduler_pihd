@@ -26,6 +26,7 @@ export const scheduleReducer = (state = initialState, action) => {
         loading: true,
       };
     case SET_SCHEDULES:
+      console.log('SET_SCHEDULES payload: ', action.payload);
       return {
         ...state,
         schedules: action.payload,
@@ -42,6 +43,7 @@ export const scheduleReducer = (state = initialState, action) => {
         weekdaySecondCallCounts: action.payload,
       };
     case SET_FIRST_CALL:
+      console.log('SET_FIRST_CALL payload: ', action.payload);
       return {
         ...state,
         firstCallAssignments: [...state.firstCallAssignments, action.payload],

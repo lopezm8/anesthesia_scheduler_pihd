@@ -11,9 +11,7 @@ const GenerateScheduleButton = ({ selectedDate, firstCallAssignment }) => {
 
     dispatch(generateRandomSchedule(new Date(year, month)));
 
-    if (firstCallAssignment) {
-      dispatch(setFirstCall(firstCallAssignment));
-    }
+    console.log('firstCallAssignment generateScheduleButton: ', firstCallAssignment);
   };
 
   return (
@@ -21,8 +19,13 @@ const GenerateScheduleButton = ({ selectedDate, firstCallAssignment }) => {
   );
 };
 
-const mapStateToProps = (state) => ({
-  firstCallAssignment: state.schedule.firstCallAssignments, // Adjust this line according to your state structure
-});
+const mapStateToProps = (state) => {
+  const assignments = state.schedule.firstCallAssignments;
+  const recentAssignment = assignments[assignments.length - 1];
+  
+  return {
+    firstCallAssignment: recentAssignment,
+  };
+}
 
 export default connect(mapStateToProps)(GenerateScheduleButton);
