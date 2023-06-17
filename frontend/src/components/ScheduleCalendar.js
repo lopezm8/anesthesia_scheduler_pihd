@@ -89,19 +89,7 @@ const mapStateToProps = state => {
     }).sort((a, b) => a.callNumber - b.callNumber);
   });
 
-
-
-  const firstCallEvents = state.schedule.firstCallAssignments.map(assignment => {
-    const [year, month, day] = assignment.date.split("-");
-    return {
-      title: assignment.anesthesiologistId,
-      start: new Date(year, month - 1, day),
-      end: new Date(year, month - 1, day),
-      allDay: true,
-    };
-  });
-
-  const events = [...regularEvents, ...firstCallEvents].sort((a, b) => a.start - b.start);
+  const events = [...regularEvents].sort((a, b) => a.start - b.start);
 
   return { events, vacations: state.vacations, firstCallAssignments: state.schedule.firstCallAssignments };
 

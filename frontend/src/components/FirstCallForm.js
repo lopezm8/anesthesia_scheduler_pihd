@@ -14,11 +14,12 @@ function AddFirstCallForm() {
     event.preventDefault();
     
     if (selectedDate && selectedAnesthesiologist) {
-      dispatch(setFirstCall(selectedAnesthesiologist, selectedDate));
+      console.log(`First Call Assigned - anesthesiologistId: ${selectedAnesthesiologist}, date: ${selectedDate}`);
     } else {
       alert('Please select a date and an anesthesiologist');
     }
   };
+  
 
   return (
     <form onSubmit={handleSubmit}>
