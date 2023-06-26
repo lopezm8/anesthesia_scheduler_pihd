@@ -8,14 +8,14 @@ import {
 const initialState = {
   schedules: [],
   loading: false,
-  weekdayFirstCallCounts: {},
-  weekdaySecondCallCounts: {},
+  callCounts: {},
   firstCallAssignments: [],
 };
 
 const SET_WEEKDAY_FIRST_CALL_COUNTS = 'SET_WEEKDAY_FIRST_CALL_COUNTS';
 const SET_WEEKDAY_SECOND_CALL_COUNTS = 'SET_WEEKDAY_SECOND_CALL_COUNTS';
 const SET_SELECTED_DATE = 'SET_SELECTED_DATE';
+const SET_CALL_COUNTS = 'SET_CALL_COUNTS'
 
 
 export const scheduleReducer = (state = initialState, action) => {
@@ -32,15 +32,10 @@ export const scheduleReducer = (state = initialState, action) => {
         schedules: action.payload,
         loading: false,
       };
-    case SET_WEEKDAY_FIRST_CALL_COUNTS:
+    case SET_CALL_COUNTS:
       return {
         ...state,
-        weekdayFirstCallCounts: action.payload,
-      };
-    case SET_WEEKDAY_SECOND_CALL_COUNTS:
-      return {
-        ...state,
-        weekdaySecondCallCounts: action.payload,
+        callCounts: action.payload,
       };
     case SET_FIRST_CALL:
       console.log('SET_FIRST_CALL payload: ', action.payload);
