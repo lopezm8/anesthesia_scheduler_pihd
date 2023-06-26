@@ -44,26 +44,46 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
       today.remainingCalls = [];
     } else {
       // Choose First call
-      if (today.weekday && setFirstCall[i]) {
-        today.firstCall = setFirstCall[i];
-      } else {
-        const firstCallConstraints = [yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...getAnesthesiologistsOnVacation(vacations, today.date)];
-        today.firstCall = chooseAnesthesiologist(today, yesterday, firstCallList, firstCallConstraints, "firstCall", anesthesiologists, vacations);
-        firstCallList = firstCallList.filter(a => a !== today.firstCall);
-        if (firstCallList.length === 0) {
-          firstCallList = [...anesthesiologists];
-          yesterday.firstCall = null;
-        }
-      }
-
-      // Choose Second call
-      const secondCallConstraints = [today.firstCall, yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall];
-      today.secondCall = chooseAnesthesiologist(today, yesterday, secondCallList, secondCallConstraints, "secondCall", anesthesiologists, vacations);
-      secondCallList = secondCallList.filter(a => a !== today.secondCall);
-      if (secondCallList.length === 0) {
-        secondCallList = [...anesthesiologists];
-        yesterday.secondCall = null;
-      }
+  if (today.weekday && setFirstCall[i]) {
+    today.firstCall = setFirstCall[i];
+  } else if (dayOfWeek === 6 || dayOfWeek === 0) {  // For weekend days
+    let constraints = [yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...anesthesiologistsOnVacationToday];
+    today.firstCall = chooseAnesthesiologist(today, yesterday, weekendList, constraints, "firstCall", anesthesiologists, vacations);
+    weekendList = weekendList.filter(a => a !== today.firstCall);
+    if (weekendList.length === 0) {
+      weekendList = [...anesthesiologists];
+      yesterday.firstCall = null;
+      yesterday.secondCall = null;
+    }
+  } else {  // For weekdays
+    let constraints = [yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...anesthesiologistsOnVacationToday];
+    today.firstCall = chooseAnesthesiologist(today, yesterday, firstCallList, constraints, "firstCall", anesthesiologists, vacations);
+    firstCallList = firstCallList.filter(a => a !== today.firstCall);
+    if (firstCallList.length === 0) {
+      firstCallList = [...anesthesiologists];
+      yesterday.firstCall = null;
+    }
+  }
+  
+  // Choose Second call
+  if (dayOfWeek === 6 || dayOfWeek === 0) {  // For weekend days
+    let constraints = [today.firstCall, yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...anesthesiologistsOnVacationToday];
+    today.secondCall = chooseAnesthesiologist(today, yesterday, weekendList, constraints, "secondCall", anesthesiologists, vacations);
+    weekendList = weekendList.filter(a => a !== today.secondCall);
+    if (weekendList.length === 0) {
+      weekendList = [...anesthesiologists];
+      yesterday.firstCall = null;
+      yesterday.secondCall = null;
+    }
+  } else {  // For weekdays
+    let constraints = [today.firstCall, yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...anesthesiologistsOnVacationToday];
+    today.secondCall = chooseAnesthesiologist(today, yesterday, secondCallList, constraints, "secondCall", anesthesiologists, vacations);
+    secondCallList = secondCallList.filter(a => a !== today.secondCall);
+    if (secondCallList.length === 0) {
+      secondCallList = [...anesthesiologists];
+      yesterday.secondCall = null;
+    }
+  }
 
       // Choose Remaining Call
       if (today.weekday) {
