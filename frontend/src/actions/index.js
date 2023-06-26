@@ -35,48 +35,53 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
     let today = {};
     today.date = i;
-    today.weekday = (i % 7 !== 0) && ((i + 1) % 7 !== 0);
+    const dayOfWeek = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), i).getDay();
+    today.weekday = (dayOfWeek !== 0) && (dayOfWeek !== 6);
 
-    // Choose First call
-    if (today.weekday && setFirstCall[i]) {
-      today.firstCall = setFirstCall[i];
-    } else {
-      const firstCallConstraints = [yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...getAnesthesiologistsOnVacation(vacations, today.date)];
-      today.firstCall = chooseAnesthesiologist(today, yesterday, firstCallList, firstCallConstraints, "firstCall", anesthesiologists);
-      firstCallList = firstCallList.filter(a => a !== today.firstCall);
-      if (firstCallList.length === 0) {
-        firstCallList = [...anesthesiologists];
-        yesterday.firstCall = null;
-      }
-    }
-
-    // Choose Second call
-    const secondCallConstraints = [today.firstCall, yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall];
-    today.secondCall = chooseAnesthesiologist(today, yesterday, secondCallList, secondCallConstraints, "secondCall", anesthesiologists);
-    secondCallList = secondCallList.filter(a => a !== today.secondCall);
-    if (secondCallList.length === 0) {
-      secondCallList = [...anesthesiologists];
-      yesterday.secondCall = null;
-    }
-
-    // Choose Remaining Call
-    remainingCallList = remainingCallList.filter(a => ![today.firstCall, today.secondCall, ...anesthesiologistsOnVacationToday].includes(a));
-    if (yesterday.secondCall && remainingCallList.includes(yesterday.secondCall)) {
-      today.lastCall = yesterday.secondCall;
-      console.log('today lastCall ', today.lastCall);
-      remainingCallList = remainingCallList.filter(a => a !== yesterday.secondCall);
-    }
-    if (yesterday.thirdCall && remainingCallList.includes(yesterday.thirdCall)) {
-      today.secondToLastCall = yesterday.thirdCall;
-      remainingCallList = remainingCallList.filter(a => a !== yesterday.thirdCall);
-    }
-    today.remainingCalls = shuffle(remainingCallList);
-    remainingCallList = [...anesthesiologists];
-
-    // Handle weekend swap
-    if (!today.weekday && yesterday.weekday) {
+    if(dayOfWeek === 0) { // Sunday Call
       today.firstCall = yesterday.secondCall;
       today.secondCall = yesterday.firstCall;
+      today.remainingCalls = [];
+    } else {
+      // Choose First call
+      if (today.weekday && setFirstCall[i]) {
+        today.firstCall = setFirstCall[i];
+      } else {
+        const firstCallConstraints = [yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...getAnesthesiologistsOnVacation(vacations, today.date)];
+        today.firstCall = chooseAnesthesiologist(today, yesterday, firstCallList, firstCallConstraints, "firstCall", anesthesiologists, vacations);
+        firstCallList = firstCallList.filter(a => a !== today.firstCall);
+        if (firstCallList.length === 0) {
+          firstCallList = [...anesthesiologists];
+          yesterday.firstCall = null;
+        }
+      }
+
+      // Choose Second call
+      const secondCallConstraints = [today.firstCall, yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall];
+      today.secondCall = chooseAnesthesiologist(today, yesterday, secondCallList, secondCallConstraints, "secondCall", anesthesiologists, vacations);
+      secondCallList = secondCallList.filter(a => a !== today.secondCall);
+      if (secondCallList.length === 0) {
+        secondCallList = [...anesthesiologists];
+        yesterday.secondCall = null;
+      }
+
+      // Choose Remaining Call
+      if (today.weekday) {
+        remainingCallList = remainingCallList.filter(a => ![today.firstCall, today.secondCall, ...anesthesiologistsOnVacationToday].includes(a));
+        if (yesterday.secondCall && remainingCallList.includes(yesterday.secondCall)) {
+          today.lastCall = yesterday.secondCall;
+          console.log('today lastCall ', today.lastCall);
+          remainingCallList = remainingCallList.filter(a => a !== yesterday.secondCall);
+        }
+        if (yesterday.thirdCall && remainingCallList.includes(yesterday.thirdCall)) {
+          today.secondToLastCall = yesterday.thirdCall;
+          remainingCallList = remainingCallList.filter(a => a !== yesterday.thirdCall);
+        }
+        today.remainingCalls = shuffle(remainingCallList);
+        remainingCallList = [...anesthesiologists];
+      } else {
+        today.remainingCalls = [];
+      }
     }
 
     // Save on-call assignments
@@ -108,16 +113,17 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     yesterday.secondCall = today.secondCall;
   }
 
-    let callCounts = tallyCalls(schedule);
-    console.log(callCounts);
+  let callCounts = tallyCalls(schedule);
+  console.log(callCounts);
 
-    dispatch({
-      type: 'SET_CALL_COUNTS',
-      payload: callCounts,
-    });
+  dispatch({
+    type: 'SET_CALL_COUNTS',
+    payload: callCounts,
+  });
 
-    dispatch({ type: SET_SCHEDULES, payload: schedule });
+  dispatch({ type: SET_SCHEDULES, payload: schedule });
 }
+
 
 
 export const ADD_VACATION = 'ADD_VACATION';
@@ -134,30 +140,22 @@ export const addVacation = (anesthesiologist, startDate, endDate) => {
   };
 };
 
-function chooseAnesthesiologist(today, yesterday, list, constraints, type, originalList) {
+function chooseAnesthesiologist(today, yesterday, list, constraints, type, originalList, vacations) {
   list = shuffle([...list]);
 
   let eligibleAnesthesiologists = list.filter(a => !constraints.includes(a));
 
-  // if no eligible anesthesiologists found
+  // if no eligible anesthesiologists found reset to original list
   if (eligibleAnesthesiologists.length === 0) {
     console.log("No eligible anesthesiologist found, expanding constraints");
-    eligibleAnesthesiologists = originalList.filter(a => a !== yesterday.firstCall && a !== yesterday.secondCall);
-  }
-
-  // if still no eligible anesthesiologists found, use the original list
-  if (eligibleAnesthesiologists.length === 0) {
-    console.log("Still no eligible anesthesiologist found, ignoring all constraints");
-    eligibleAnesthesiologists = [...originalList];
+    const anesthesiologistsOnVacationToday = getAnesthesiologistsOnVacation(vacations, today.date);
+    eligibleAnesthesiologists = originalList.filter(a => a !== yesterday.firstCall && a !== yesterday.secondCall && !anesthesiologistsOnVacationToday.includes(a));
   }
 
   const chosen = eligibleAnesthesiologists[0];
   console.log('chosen today', chosen);
   return chosen;
 }
-
-
-
 
 function shuffle(array) {
   let currentIndex = array.length, temporaryValue, randomIndex;
