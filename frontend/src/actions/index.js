@@ -137,25 +137,23 @@ export const addVacation = (anesthesiologist, startDate, endDate) => {
 function chooseAnesthesiologist(today, yesterday, list, constraints, type, originalList) {
   list = shuffle([...list]);
 
-  for (let i = 0; i < list.length; i++) {
-    const chosen = list[i];
+  let eligibleAnesthesiologists = list.filter(a => !constraints.includes(a));
 
-    if (constraints.includes(chosen)) {
-      console.log(`Anesthesiologist ${chosen} was not chosen because it's in the constraint list.`);
-    } else {
-      return chosen;
-    }
+  // if no eligible anesthesiologists found
+  if (eligibleAnesthesiologists.length === 0) {
+    console.log("No eligible anesthesiologist found, expanding constraints");
+    eligibleAnesthesiologists = originalList.filter(a => a !== yesterday.firstCall && a !== yesterday.secondCall);
   }
 
-  // Reset list if no eligible anesthesiologists
-  if (list.length === originalList.length) {
-    console.log("All anesthesiologists have been tried and none meet the criteria. Resetting the list.");
-    list = [...originalList];
+  // if still no eligible anesthesiologists found, use the original list
+  if (eligibleAnesthesiologists.length === 0) {
+    console.log("Still no eligible anesthesiologist found, ignoring all constraints");
+    eligibleAnesthesiologists = [...originalList];
   }
 
-  if (!originalList || originalList.length === 0) {
-    throw new Error('The original list of anesthesiologists is empty or undefined');
-  }
+  const chosen = eligibleAnesthesiologists[0];
+  console.log('chosen today', chosen);
+  return chosen;
 }
 
 
