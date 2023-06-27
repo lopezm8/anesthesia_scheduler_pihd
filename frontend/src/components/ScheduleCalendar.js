@@ -6,13 +6,9 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { groupBy } from 'lodash';
 import './ScheduleCalendar.css'; 
 
-
 const localizer = globalizeLocalizer(globalize);
 
-const ScheduleCalendar = ({ events, selectedDate, firstCallAssignments }) => {
-  console.log('selected date ScheduleCalendar: ', selectedDate);
-  console.log(events);
-
+const ScheduleCalendar = ({ events, selectedDate }) => {
   const [currentDate, setCurrentDate] = React.useState(() => {
     const date = new Date(selectedDate);
     date.setDate(date.getDate() + 1);
@@ -20,22 +16,22 @@ const ScheduleCalendar = ({ events, selectedDate, firstCallAssignments }) => {
   });
 
   useEffect(() => {
-    console.log('selected date ScheduleCalendar2: ', selectedDate);
     const date = new Date(selectedDate);
     date.setDate(date.getDate() + 1);
     setCurrentDate(date);
   }, [selectedDate]);
 
   const handleNavigate = (date) => {
+    console.log('Date from handleNavigate: ', date);
     setCurrentDate(date);
   };
-  
-  console.log('currentDate ScheduleCalendar.js: ', currentDate)
-  
+
+  console.log('Rendered ScheduleCalendar with props:', { events, selectedDate });
+  console.log('Calendar component events', events);
   return (
     <div>
       <Calendar
-        key={currentDate}  
+        key={currentDate}
         localizer={localizer}
         events={events}
         style={{ height: "150vh" }}
@@ -48,15 +44,9 @@ const ScheduleCalendar = ({ events, selectedDate, firstCallAssignments }) => {
 
 
 const mapStateToProps = state => {
-  console.log(state);
-
-  // Group schedules by the on_call_date
+  console.log("State in ScheduleCalendar mapStateToProps: ", state);
   const schedulesByDate = groupBy(state.schedule.schedules, 'on_call_date');
-
-  // Map over each group and assign call numbers
   const regularEvents = Object.values(schedulesByDate).flatMap((schedulesForOneDay, index) => {
-
-    // Sort schedulesForOneDay by the firstCallAssignments
     schedulesForOneDay.sort((a, b) => {
       const isAOnFirstCall = state.schedule.firstCallAssignments.some(assignment =>
         assignment.date === a.on_call_date &&
@@ -79,23 +69,21 @@ const mapStateToProps = state => {
 
     return schedulesForOneDay.map((schedule, index) => {
       const [year, month, day] = schedule.on_call_date.split("-");
-      return {
+      const event = {
         title: schedule.anesthesiologist,
         callNumber: index + 1,
         start: new Date(year, month - 1, day),
         end: new Date(year, month - 1, day),
         allDay: true,
       };
+
+      return event;
     }).sort((a, b) => a.callNumber - b.callNumber);
   });
 
   const events = [...regularEvents].sort((a, b) => a.start - b.start);
-
   return { events, vacations: state.vacations, firstCallAssignments: state.schedule.firstCallAssignments };
 
 };
-
-
-
 
 export default connect(mapStateToProps)(ScheduleCalendar);

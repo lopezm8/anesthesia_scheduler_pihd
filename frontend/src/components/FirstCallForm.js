@@ -14,7 +14,6 @@ function AddFirstCallForm() {
     event.preventDefault();
     
     if (selectedDate && selectedAnesthesiologist) {
-      console.log(`First Call Assigned - anesthesiologistId: ${selectedAnesthesiologist}, date: ${selectedDate}`);
     } else {
       alert('Please select a date and an anesthesiologist');
     }
@@ -28,11 +27,12 @@ function AddFirstCallForm() {
         <select value={selectedAnesthesiologist} onChange={e => setSelectedAnesthesiologist(e.target.value)}>
           <option value="">Select...</option>
           {anesthesiologists.map(anesthesiologist =>
-            <option key={anesthesiologist.id} value={anesthesiologist.id}>
-              {anesthesiologist.name}
+            <option key={anesthesiologist} value={anesthesiologist}>
+              {anesthesiologist}
             </option>
           )}
         </select>
+
       </label>
       <label>
         Date:

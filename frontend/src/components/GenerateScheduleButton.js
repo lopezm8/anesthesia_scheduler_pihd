@@ -10,8 +10,6 @@ const GenerateScheduleButton = ({ selectedDate, firstCallAssignment }) => {
     const month = parseInt(selectedDate.split('-')[1]) - 1;
 
     dispatch(generateRandomSchedule(new Date(year, month)));
-
-    console.log('firstCallAssignment generateScheduleButton: ', firstCallAssignment);
   };
 
   return (
@@ -24,7 +22,10 @@ const mapStateToProps = (state) => {
   const recentAssignment = assignments[assignments.length - 1];
   
   return {
-    firstCallAssignment: recentAssignment,
+    firstCallAssignment: recentAssignment ? {
+      anesthesiologistId: String(recentAssignment.anesthesiologistId),
+      date: String(recentAssignment.date),
+    } : { anesthesiologistId: '', date: '' },
   };
 }
 

@@ -45,7 +45,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     } else {
       // Choose First call
   if (today.weekday && setFirstCall[i]) {
-    today.firstCall = setFirstCall[i];
+    today.firstCall = setFirstCall[i].anesthesiologistId;
   } else if (dayOfWeek === 6 || dayOfWeek === 0) {  // For weekend days
     let constraints = [yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...anesthesiologistsOnVacationToday];
     today.firstCall = chooseAnesthesiologist(today, yesterday, weekendList, constraints, "firstCall", anesthesiologists, vacations);
@@ -90,7 +90,6 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
         remainingCallList = remainingCallList.filter(a => ![today.firstCall, today.secondCall, ...anesthesiologistsOnVacationToday].includes(a));
         if (yesterday.secondCall && remainingCallList.includes(yesterday.secondCall)) {
           today.lastCall = yesterday.secondCall;
-          console.log('today lastCall ', today.lastCall);
           remainingCallList = remainingCallList.filter(a => a !== yesterday.secondCall);
         }
         if (yesterday.thirdCall && remainingCallList.includes(yesterday.thirdCall)) {
@@ -134,7 +133,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   }
 
   let callCounts = tallyCalls(schedule);
-  console.log(callCounts);
+  console.log('callCounts: ', callCounts);
 
   dispatch({
     type: 'SET_CALL_COUNTS',
@@ -167,13 +166,11 @@ function chooseAnesthesiologist(today, yesterday, list, constraints, type, origi
 
   // if no eligible anesthesiologists found reset to original list
   if (eligibleAnesthesiologists.length === 0) {
-    console.log("No eligible anesthesiologist found, expanding constraints");
     const anesthesiologistsOnVacationToday = getAnesthesiologistsOnVacation(vacations, today.date);
     eligibleAnesthesiologists = originalList.filter(a => a !== yesterday.firstCall && a !== yesterday.secondCall && !anesthesiologistsOnVacationToday.includes(a));
   }
 
   const chosen = eligibleAnesthesiologists[0];
-  console.log('chosen today', chosen);
   return chosen;
 }
 
@@ -212,7 +209,6 @@ export const fetchSchedules = () => async (dispatch) => {
 };
 
 export const setFirstCall = (anesthesiologistId, date) => {
-  console.log(`setFirstCall in actions index.js - anesthesiologistId: ${anesthesiologistId}, date: ${date}`);
   return {
     type: SET_FIRST_CALL,
     payload: { anesthesiologistId, date },

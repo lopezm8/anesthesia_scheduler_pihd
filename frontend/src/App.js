@@ -23,7 +23,7 @@ const App = () => {
           <Route path="/schedule" element={
               <div>
                   <DateSelector selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
-                  <ScheduleCalendar />
+                  <ScheduleCalendar selectedDate={selectedDate} />
               </div>
           }/>
           <Route path="/" element={

@@ -12,6 +12,7 @@ const ScheduleForm = () => {
     const handleSubmit = e => {
         e.preventDefault();
         dispatch(addSchedule({ anesthesiologistId, date, callType }));
+        console.log('ScheduleForm handleSubmit: ', { anesthesiologistId, date, callType });
         setAnesthesiologistId('');
         setDate('');
         setCallType('');

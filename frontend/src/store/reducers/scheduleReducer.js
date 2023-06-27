@@ -38,7 +38,6 @@ export const scheduleReducer = (state = initialState, action) => {
         callCounts: action.payload,
       };
     case SET_FIRST_CALL:
-      console.log('SET_FIRST_CALL payload: ', action.payload);
       return {
         ...state,
         firstCallAssignments: [...state.firstCallAssignments, action.payload],
