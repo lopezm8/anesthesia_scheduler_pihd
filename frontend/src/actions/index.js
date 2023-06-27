@@ -48,7 +48,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     today.firstCall = setFirstCall[i].anesthesiologistId;
   } else if (dayOfWeek === 6 || dayOfWeek === 0) {  // For weekend days
     let constraints = [yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...anesthesiologistsOnVacationToday];
-    today.firstCall = chooseAnesthesiologist(today, yesterday, weekendList, constraints, "firstCall", anesthesiologists, vacations);
+    today.firstCall = chooseAnesthesiologist(today, yesterday, firstCallList, constraints, "firstCall", anesthesiologists, vacations, selectedMonth);
     weekendList = weekendList.filter(a => a !== today.firstCall);
     if (weekendList.length === 0) {
       weekendList = [...anesthesiologists];
@@ -57,7 +57,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     }
   } else {  // For weekdays
     let constraints = [yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...anesthesiologistsOnVacationToday];
-    today.firstCall = chooseAnesthesiologist(today, yesterday, firstCallList, constraints, "firstCall", anesthesiologists, vacations);
+    today.firstCall = chooseAnesthesiologist(today, yesterday, firstCallList, constraints, "firstCall", anesthesiologists, vacations, selectedMonth);
     firstCallList = firstCallList.filter(a => a !== today.firstCall);
     if (firstCallList.length === 0) {
       firstCallList = [...anesthesiologists];
@@ -68,7 +68,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   // Choose Second call
   if (dayOfWeek === 6 || dayOfWeek === 0) {  // For weekend days
     let constraints = [today.firstCall, yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...anesthesiologistsOnVacationToday];
-    today.secondCall = chooseAnesthesiologist(today, yesterday, weekendList, constraints, "secondCall", anesthesiologists, vacations);
+    today.secondCall = chooseAnesthesiologist(today, yesterday, secondCallList, constraints, "secondCall", anesthesiologists, vacations, selectedMonth);
     weekendList = weekendList.filter(a => a !== today.secondCall);
     if (weekendList.length === 0) {
       weekendList = [...anesthesiologists];
@@ -77,7 +77,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     }
   } else {  // For weekdays
     let constraints = [today.firstCall, yesterday.firstCall, yesterday.secondCall, dayBeforeYesterday.firstCall, dayBeforeYesterday.secondCall, ...anesthesiologistsOnVacationToday];
-    today.secondCall = chooseAnesthesiologist(today, yesterday, secondCallList, constraints, "secondCall", anesthesiologists, vacations);
+    today.secondCall = chooseAnesthesiologist(today, yesterday, secondCallList, constraints, "secondCall", anesthesiologists, vacations, selectedMonth);
     secondCallList = secondCallList.filter(a => a !== today.secondCall);
     if (secondCallList.length === 0) {
       secondCallList = [...anesthesiologists];
@@ -87,7 +87,13 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
       // Choose Remaining Call
       if (today.weekday) {
-        remainingCallList = remainingCallList.filter(a => ![today.firstCall, today.secondCall, ...anesthesiologistsOnVacationToday].includes(a));
+        let todayDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), today.date);
+        remainingCallList = remainingCallList.filter(a => {
+          let notInFirstAndSecondCall = ![today.firstCall, today.secondCall].includes(a);
+          let notOnVacation = !isAnesthesiologistOnVacation(vacations, a, todayDate);
+          return notInFirstAndSecondCall && notOnVacation;
+        });
+        
         if (yesterday.secondCall && remainingCallList.includes(yesterday.secondCall)) {
           today.lastCall = yesterday.secondCall;
           remainingCallList = remainingCallList.filter(a => a !== yesterday.secondCall);
@@ -159,19 +165,43 @@ export const addVacation = (anesthesiologist, startDate, endDate) => {
   };
 };
 
-function chooseAnesthesiologist(today, yesterday, list, constraints, type, originalList, vacations) {
+function chooseAnesthesiologist(today, yesterday, list, constraints, type, originalList, vacations, selectedMonth) {
+  let todayDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), today.date);
   list = shuffle([...list]);
 
-  let eligibleAnesthesiologists = list.filter(a => !constraints.includes(a));
+  let eligibleAnesthesiologists = list.filter(a => {
+    let notInConstraints = !constraints.includes(a);
+    let notOnVacation = !isAnesthesiologistOnVacation(vacations, a, todayDate);
+    return notInConstraints && notOnVacation;
+  });
 
   // if no eligible anesthesiologists found reset to original list
+  let attempts = 0;
+  while (eligibleAnesthesiologists.length === 0 && attempts < 5) {
+    eligibleAnesthesiologists = originalList.filter(a => {
+      let notInYesterdaysCalls = a !== yesterday.firstCall && a !== yesterday.secondCall;
+      let notOnVacation = !isAnesthesiologistOnVacation(vacations, a, todayDate);
+      return notInYesterdaysCalls && notOnVacation;
+    });
+    attempts++;
+  }
+
+  // If no eligible anesthesiologists found after multiple attempts, reset the list and try again
   if (eligibleAnesthesiologists.length === 0) {
-    const anesthesiologistsOnVacationToday = getAnesthesiologistsOnVacation(vacations, today.date);
-    eligibleAnesthesiologists = originalList.filter(a => a !== yesterday.firstCall && a !== yesterday.secondCall && !anesthesiologistsOnVacationToday.includes(a));
+    eligibleAnesthesiologists = [...originalList];
+    eligibleAnesthesiologists = eligibleAnesthesiologists.filter(a => !isAnesthesiologistOnVacation(vacations, a, todayDate));
   }
 
   const chosen = eligibleAnesthesiologists[0];
   return chosen;
+}
+
+function isAnesthesiologistOnVacation(vacations, anesthesiologistId, date) {
+  return vacations.some(vacation => {
+    let start = new Date(vacation.startDate);
+    let end = new Date(vacation.endDate);
+    return vacation.anesthesiologist === anesthesiologistId && date >= start && date <= end;
+  });
 }
 
 function shuffle(array) {
@@ -187,10 +217,11 @@ function shuffle(array) {
 }
 
 function getAnesthesiologistsOnVacation(vacations, day) {
+  const currentDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
   return vacations.filter(vacation => {
-    const start = new Date(vacation.startDate);
-    const end = new Date(vacation.endDate);
-    return day >= start && day <= end;
+    const start = new Date(new Date(vacation.startDate).getFullYear(), new Date(vacation.startDate).getMonth(), new Date(vacation.startDate).getDate());
+    const end = new Date(new Date(vacation.endDate).getFullYear(), new Date(vacation.endDate).getMonth(), new Date(vacation.endDate).getDate());
+    return currentDate >= start && currentDate <= end;
   }).map(vacation => vacation.anesthesiologist);
 }
 
