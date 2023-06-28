@@ -9,13 +9,20 @@ const AnesthesiologistList = () => {
   const callCounts = useSelector(state => state.schedule.callCounts) || {};
   const firstCalls = useSelector(state => state.firstCall.firstCallAssignments) || [];
   const selectedDate = useSelector(state => state.schedule.selectedDate) || ''; 
+  console.log('AnesList vacations', vacations);
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    date.setDate(date.getDate() + 1);
-  
+    let date = new Date(dateString);
+    date = new Date(date.getTime() + date.getTimezoneOffset() * 60 * 1000);
     const options = { year: '2-digit', month: 'numeric', day: 'numeric' };
     return date.toLocaleDateString(undefined, options);
+  }
+
+  const decrementDateByOneDay = (dateString) => {
+    let date = new Date(dateString);
+    date = new Date(date.getTime() + date.getTimezoneOffset() * 60 * 1000);
+    date.setDate(date.getDate() - 1);
+    return date;
   }
   
   return (
@@ -36,12 +43,15 @@ const AnesthesiologistList = () => {
         <h2>Vacations</h2>
         <ul>
           {anesthesiologists.map((anesthesiologist, index) => {
-            const anesVacations = vacations.filter(vacation => vacation.anesthesiologist === anesthesiologist);
+            let anesVacations = vacations.filter(vacation => vacation.anesthesiologist === anesthesiologist);
+            anesVacations = anesVacations.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
             
             return anesVacations.length > 0 && (
               <li key={index}>
                 {anesthesiologist}: {anesVacations.map((vacation, vIndex) => 
-                  `${formatDate(vacation.startDate)} - ${formatDate(vacation.endDate)}`
+                  formatDate(new Date(vacation.startDate)) === formatDate(decrementDateByOneDay(new Date(vacation.endDate))) 
+                    ? `${formatDate(new Date(vacation.startDate))}`
+                    : `${formatDate(new Date(vacation.startDate))} - ${formatDate(decrementDateByOneDay(new Date(vacation.endDate)))}`
                 ).join(', ')}
               </li>
             );
@@ -57,7 +67,7 @@ const AnesthesiologistList = () => {
             return anesFirstCalls.length > 0 && (
               <li key={index}>
                 {anesthesiologist}: {anesFirstCalls.map((call, cIndex) => 
-                  `${formatDate(call.date)}`
+                  `${formatDate(new Date(call.date))}`
                 ).join(', ')}
               </li>
             );
