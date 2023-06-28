@@ -14,3 +14,7 @@
   gap: 50px;
 }
 
+.rbc-event {
+  height: auto !important;
+  white-space: normal !important;
+}

@@ -37,6 +37,7 @@ const ScheduleCalendar = ({ events, selectedDate }) => {
         style={{ height: "150vh" }}
         date={currentDate}
         onNavigate={handleNavigate}
+        popupOffset={{y: 10000}}
       />
     </div>
   );
