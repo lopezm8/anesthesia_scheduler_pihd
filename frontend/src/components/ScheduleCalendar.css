@@ -1,0 +1,10 @@
+.content-box {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .anesthesiologist-box, .vacations-box {
+    flex: 1;
+    margin: 0 10px;
+  }
+  
