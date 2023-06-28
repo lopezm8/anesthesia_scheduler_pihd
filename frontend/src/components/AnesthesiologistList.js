@@ -7,17 +7,17 @@ const AnesthesiologistList = () => {
   const anesthesiologists = useSelector(state => state.anesthesiologist) || [];
   const vacations = useSelector(state => state.vacations) || [];
   const callCounts = useSelector(state => state.schedule.callCounts) || {};
-  const selectedDate = useSelector(state => state.schedule.selectedDate) || '';
-
-  const handleDateChange = (e) => {
-    dispatch(setSelectedDate(e.target.value));
-  }
+  const firstCalls = useSelector(state => state.firstCall.firstCallAssignments) || [];
+  const selectedDate = useSelector(state => state.schedule.selectedDate) || ''; 
 
   const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    date.setDate(date.getDate() + 1);
+  
     const options = { year: '2-digit', month: 'numeric', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    return date.toLocaleDateString(undefined, options);
   }
-
+  
   return (
     <div className="content-box">
       <div className="anesthesiologist-box">
@@ -42,6 +42,22 @@ const AnesthesiologistList = () => {
               <li key={index}>
                 {anesthesiologist}: {anesVacations.map((vacation, vIndex) => 
                   `${formatDate(vacation.startDate)} - ${formatDate(vacation.endDate)}`
+                ).join(', ')}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <div className="first-calls-box">
+        <h2>First Calls</h2>
+        <ul>
+          {anesthesiologists.map((anesthesiologist, index) => {
+            const anesFirstCalls = firstCalls.filter(call => call.anesthesiologistId === anesthesiologist);
+            
+            return anesFirstCalls.length > 0 && (
+              <li key={index}>
+                {anesthesiologist}: {anesFirstCalls.map((call, cIndex) => 
+                  `${formatDate(call.date)}`
                 ).join(', ')}
               </li>
             );
