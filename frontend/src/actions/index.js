@@ -208,101 +208,66 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
       }
 
       if(date.getDay() === 5) { // If it's Friday
-        // Get the upcoming Saturday first call anesthesiologist
         const upcomingSaturdayFirstCall = eligibleAnesthesiologists[0]; 
-    
-        // Move upcomingSaturdayFirstCall to the second to last position in the onCallAnesthesiologists array
         onCallAnesthesiologists = onCallAnesthesiologists.filter(anesthesiologist => anesthesiologist !== upcomingSaturdayFirstCall);
         onCallAnesthesiologists.splice(onCallAnesthesiologists.length - 1, 0, upcomingSaturdayFirstCall);
       }
     } else {
-      if (date.getDay() === 6) {
-        // It's a weekend
-        eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
-          // Check that anesthesiologist was not on call last weekend
-          if (lastWeekendOnCall[anesthesiologist] !== null) {
-            const daysSinceLastWeekend = Math.round((date.getTime() - lastWeekendOnCall[anesthesiologist].getTime()) / (1000 * 60 * 60 * 24));
-            return daysSinceLastWeekend > 7;
-          }
-          return true;
-        });
-
-        // Calculate the minimum count of weekend calls across all anesthesiologists
-        const minWeekendCount = Math.min(...Object.values(weekendCounts).map(data => data.count));
-        
-        eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
-          const anesWeekendData = weekendCounts[anesthesiologist];
-      
-          // Check if this anesthesiologist had a call in the last two weekends
-          const recentWeekends = anesWeekendData.dates.filter(callDate => {
-            const daysAgo = (date.getTime() - new Date(callDate).getTime()) / 1000 / 60 / 60 / 24;
-            return daysAgo <= 14;
+      if (date.getDay() === 6) {  // It's a Saturday
+          eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
+              if (lastWeekendOnCall[anesthesiologist] !== null) {
+                  const daysSinceLastWeekend = Math.round((date.getTime() - lastWeekendOnCall[anesthesiologist].getTime()) / (1000 * 60 * 60 * 24));
+                  return daysSinceLastWeekend > 7;
+              }
+              return true;
           });
-          return recentWeekends.length === 0 || anesWeekendData.count === minWeekendCount;
-        });
-
-        // Assign a weekend to an anesthesiologist from the queue
-        let weekendAnesthesiologist = weekendQueue.find(anesthesiologist => eligibleAnesthesiologists.includes(anesthesiologist));
-
-        // If no eligible anesthesiologists in queue, just pick the first eligible anesthesiologist
-        if (!weekendAnesthesiologist) {
-          weekendAnesthesiologist = eligibleAnesthesiologists[0];
-        }
-
-        onCallAnesthesiologists.forEach((anesthesiologist, index) => {
-          if (index < 2) {
-            weekendCounts[anesthesiologist].count += 1;
-            weekendCounts[anesthesiologist].dates.push(date.toISOString().split('T')[0]);
-            weekendHistory[anesthesiologist] = date.toISOString().split('T')[0];
-          }
-          if (index < 2) {
-            lastWeekendOnCall[anesthesiologist] = date;
-          }
-        });
-
-        onCallAnesthesiologists.push(weekendAnesthesiologist);
-        weekendQueue = weekendQueue.filter(anesthesiologist => anesthesiologist !== weekendAnesthesiologist);
-
-        // If all anesthesiologists have been scheduled for a weekend, reset the queue
-        if (weekendQueue.length === 0) {
-          weekendQueue = [...anesthesiologists];
-        }
-
-        // Assign two anesthesiologists for first and second calls randomly
-        while (onCallAnesthesiologists.length < Math.min(2, eligibleAnesthesiologists.length)) {
-          const randomAnesthesiologist = eligibleAnesthesiologists[Math.floor(Math.random() * eligibleAnesthesiologists.length)];
-          if (!onCallAnesthesiologists.includes(randomAnesthesiologist)) {
-            onCallAnesthesiologists.unshift(randomAnesthesiologist);
-          }
-        }
-
-    onCallAnesthesiologists.forEach((anesthesiologist, index) => {
-      if (index < 2) {
-        // Initialize the object if it does not exist yet
-        if (!weekendCounts[anesthesiologist]) {
-          weekendCounts[anesthesiologist] = {
-            count: 0,
-            dates: [],
-          };
-        }
-        weekendCounts[anesthesiologist].count += 1;
-        weekendCounts[anesthesiologist].dates.push(date.toISOString().split('T')[0]);
-        weekendHistory[anesthesiologist] = date.toISOString().split('T')[0];
-        lastWeekendOnCall[anesthesiologist] = date;
-      }
-    });
-
-    // If all anesthesiologists have been scheduled for a weekend, reset the queue
-    if (weekendQueue.length === 0) {
-      weekendQueue = [...anesthesiologists];
-    }
-    } else if (date.getDay() === 0) { // It's a Sunday
-      onCallAnesthesiologists = [previousSecondCall, previousFirstCall];
-      sundayFirstCall = onCallAnesthesiologists[0];
-    }
   
-    }
-
+          if (eligibleAnesthesiologists.length < 2) {
+              eligibleAnesthesiologists = [...anesthesiologists]; 
+              eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
+                  const isOnVacation = vacations.some(vacation => {
+                      return vacation.anesthesiologist === anesthesiologist &&
+                          new Date(vacation.startDate) <= date &&
+                          new Date(vacation.endDate) >= date;
+                  });
+                  return !isOnVacation;
+              });
+          }
+  
+          // Assign two anesthesiologists for first and second calls randomly
+          while (onCallAnesthesiologists.length < 2) {
+              const randomAnesthesiologist = eligibleAnesthesiologists[Math.floor(Math.random() * eligibleAnesthesiologists.length)];
+              if (!onCallAnesthesiologists.includes(randomAnesthesiologist)) {
+                  onCallAnesthesiologists.unshift(randomAnesthesiologist);
+              }
+          }
+  
+          onCallAnesthesiologists.forEach((anesthesiologist, index) => {
+              if (index < 2) {
+                  if (!weekendCounts[anesthesiologist]) {
+                      weekendCounts[anesthesiologist] = {
+                          count: 0,
+                          dates: [],
+                      };
+                  }
+                  weekendCounts[anesthesiologist].count += 1;
+                  weekendCounts[anesthesiologist].dates.push(date.toISOString().split('T')[0]);
+                  weekendHistory[anesthesiologist] = date.toISOString().split('T')[0];
+                  lastWeekendOnCall[anesthesiologist] = date;
+              }
+          });
+  
+          // If all anesthesiologists have been scheduled for a weekend, reset the queue
+          if (weekendQueue.length === 0) {
+              weekendQueue = [...anesthesiologists];
+          }
+      } 
+      else if (date.getDay() === 0) { // It's a Sunday
+          onCallAnesthesiologists = [previousSecondCall, previousFirstCall];
+          sundayFirstCall = onCallAnesthesiologists[0];
+      }
+  }
+  
     onCallAnesthesiologists.forEach((anesthesiologist, index) => {
       const callType = index === 0 ? 'first' : (index === 1 ? 'second' : 'third');
       schedules.push({
