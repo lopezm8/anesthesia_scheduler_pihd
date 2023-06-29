@@ -54,10 +54,10 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
   for (let i = 0; i < totalDays; i++) {
     let preserveFirstCall = false;
-    if (date.getDay() === 0) { // If it's Sunday, update sundayFirstCall
+    if (date.getDay() === 0) {
       sundayFirstCall = previousFirstCall;
     }
-    if (date.getDay() === 1) { // If it's Monday, reset the firstCallOfWeek list
+    if (date.getDay() === 1) {
       firstCallOfWeek = [];
     }
 
@@ -97,6 +97,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     });
 
     if (i !== 0) {
+      // Adding condition to exclude anesthesiologists that were first or second call the previous day
       const tomorrowFirstCallAssignment = firstCallAssignments.find(assignment => {
         const assignmentDate = new Date(assignment.date);
         return assignmentDate.getDate() === date.getDate() + 1 &&
@@ -104,8 +105,11 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
           assignmentDate.getFullYear() === date.getFullYear();
       });
       
-      if (tomorrowFirstCallAssignment) {
-        eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== tomorrowFirstCallAssignment.anesthesiologist);
+      if (tomorrowFirstCallAssignment || i !== 0) {
+        eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist =>
+          (!tomorrowFirstCallAssignment || anesthesiologist !== tomorrowFirstCallAssignment.anesthesiologist) &&
+          anesthesiologist !== previousFirstCall && anesthesiologist !== previousSecondCall
+        );
       }
     }
 
@@ -119,8 +123,11 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
           eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== previousSecondCall).concat(previousSecondCall ? [previousSecondCall] : []);
         }
       } else {
-        // For other weekdays, remove the previous day's first call from the eligible list
-        eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== previousFirstCall);
+        // For other weekdays, remove the previous day's first and second call from the eligible list
+        eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => 
+          anesthesiologist !== previousFirstCall &&
+          anesthesiologist !== previousSecondCall
+        );
       }      
 
       eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
@@ -315,7 +322,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   let callCounts = tallyCalls(schedules);
   console.log('callCounts: ', callCounts);
 
-  balanceCalls(schedules, callCounts);
+  balanceCalls(schedules, callCounts, firstCallAssignments);
 
   dispatch({
     type: 'SET_CALL_COUNTS',
@@ -386,35 +393,52 @@ function tallyCalls(schedules) {
   return callCounts;
 }
 
-function balanceCalls(schedules, callCounts) {
+function balanceCalls(schedules, callCounts, firstCallAssignment) {
   function balanceCallType(callType) {
-      let anesthesiologists = Object.keys(callCounts);
-      for (let i = 0; i < anesthesiologists.length; i++) {
-          let anesthesiologist = anesthesiologists[i];
-          if (callCounts[anesthesiologist][callType] > 4) {
-              // Look for a day where this anesthesiologist is on this type of call
-              for (let j = 0; j < schedules.length; j++) {
-                  if (schedules[j].anesthesiologist === anesthesiologist && schedules[j].call_type === callType) {
-                      // Found a day. Now look for a replacement anesthesiologist
-                      for (let k = 0; k < anesthesiologists.length; k++) {
-                          let replacement = anesthesiologists[k];
-                          
-                          // Make sure the replacement has less than 4 calls
-                          if (callCounts[replacement][callType] < 4 && schedules.some(s => s.on_call_date === schedules[j].on_call_date && s.call_type === 'third' && s.anesthesiologist === replacement)) {
-                              // Found a replacement. Swap their positions in the schedule
-                              let replacementScheduleIndex = schedules.findIndex(s => s.on_call_date === schedules[j].on_call_date && s.call_type === 'third' && s.anesthesiologist === replacement);
-                              schedules[j].anesthesiologist = replacement;
-                              schedules[replacementScheduleIndex].anesthesiologist = anesthesiologist;
+    let anesthesiologists = Object.keys(callCounts);
+    for (let i = 0; i < anesthesiologists.length; i++) {
+      let anesthesiologist = anesthesiologists[i];
 
-                              callCounts[anesthesiologist][callType]--;
-                              callCounts[replacement][callType]++;
-                              break;
-                          }
-                      }
-                  }
-              }
-          }
+      if (firstCallAssignment && firstCallAssignment.anesthesiologist === anesthesiologist) {
+        continue;
       }
+
+      if (callCounts[anesthesiologist][callType] > 4) {
+        for (let j = 0; j < schedules.length; j++) {
+          if (schedules[j].anesthesiologist === anesthesiologist && schedules[j].call_type === callType) {
+            for (let k = 0; k < anesthesiologists.length; k++) {
+              let replacement = anesthesiologists[k];
+              if (callCounts[replacement][callType] < 4 && schedules.some(s => s.on_call_date === schedules[j].on_call_date && s.call_type === 'third' && s.anesthesiologist === replacement)) {
+                let replacementScheduleIndex = schedules.findIndex(s => s.on_call_date === schedules[j].on_call_date && s.call_type === 'third' && s.anesthesiologist === replacement);
+                schedules[j].anesthesiologist = replacement;
+                schedules[replacementScheduleIndex].anesthesiologist = anesthesiologist;
+
+                callCounts[anesthesiologist][callType]--;
+                callCounts[replacement][callType]++;
+
+                if(callType === 'first') {
+                  let nextDay = new Date(schedules[j].on_call_date);
+                  nextDay.setDate(nextDay.getDate() + 1);
+                  let nextDayStr = nextDay.toISOString().split('T')[0];
+
+                  let nextDaySchedules = schedules.filter(s => s.on_call_date === nextDayStr);
+                  for (let l = 0; l < nextDaySchedules.length; l++) {
+                    if (nextDaySchedules[l].anesthesiologist === replacement) {
+                      nextDaySchedules[l].anesthesiologist = '';
+                    }
+                    if (nextDaySchedules[l].anesthesiologist === '' && anesthesiologist !== firstCallAssignment.anesthesiologist) {
+                      nextDaySchedules[l].anesthesiologist = anesthesiologist;
+                    }
+                  }
+                }
+
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
   }
   balanceCallType('first');
   balanceCallType('second');
