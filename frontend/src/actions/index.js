@@ -87,7 +87,6 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
     console.log('vacations', vacations);
     console.log('anesthesiologists' , anesthesiologists);
-    // filter anesthesiologists not on vacation
     eligibleAnesthesiologists = anesthesiologists.filter(anesthesiologist => {
       const isOnVacation = vacations.some(vacation => {
         return vacation.anesthesiologist === anesthesiologist &&
@@ -97,7 +96,6 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
       return !isOnVacation;
     });
 
-    // If it's not the first day and a anesthesiologist is set to first call tomorrow, make them ineligible for today
     if (i !== 0) {
       const tomorrowFirstCallAssignment = firstCallAssignments.find(assignment => {
         const assignmentDate = new Date(assignment.date);
@@ -137,7 +135,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
         
         if (firstCallAnesthesiologist) {
           eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== firstCallAnesthesiologist);
-          preserveFirstCall = true; // If we have a pre-assigned first call, then we set this to true
+          preserveFirstCall = true;
         }
       }
 
@@ -272,20 +270,20 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
         }
 
     onCallAnesthesiologists.forEach((anesthesiologist, index) => {
-  if (index < 2) {
-    // Initialize the object if it does not exist yet
-    if (!weekendCounts[anesthesiologist]) {
-      weekendCounts[anesthesiologist] = {
-        count: 0,
-        dates: [],
-      };
-    }
-    weekendCounts[anesthesiologist].count += 1;
-    weekendCounts[anesthesiologist].dates.push(date.toISOString().split('T')[0]);
-    weekendHistory[anesthesiologist] = date.toISOString().split('T')[0];
-    lastWeekendOnCall[anesthesiologist] = date;
-  }
-});
+      if (index < 2) {
+        // Initialize the object if it does not exist yet
+        if (!weekendCounts[anesthesiologist]) {
+          weekendCounts[anesthesiologist] = {
+            count: 0,
+            dates: [],
+          };
+        }
+        weekendCounts[anesthesiologist].count += 1;
+        weekendCounts[anesthesiologist].dates.push(date.toISOString().split('T')[0]);
+        weekendHistory[anesthesiologist] = date.toISOString().split('T')[0];
+        lastWeekendOnCall[anesthesiologist] = date;
+      }
+    });
 
     // If all anesthesiologists have been scheduled for a weekend, reset the queue
     if (weekendQueue.length === 0) {
@@ -317,11 +315,14 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   let callCounts = tallyCalls(schedules);
   console.log('callCounts: ', callCounts);
 
+  balanceCalls(schedules, callCounts);
+
   dispatch({
     type: 'SET_CALL_COUNTS',
     payload: callCounts,
   });
-
+  console.log("This is the callCounts: ", callCounts);
+  console.log("This is the index.js schedules: ", schedules);
   dispatch({ type: 'SET_SCHEDULES', payload: schedules });
 };
 
@@ -383,4 +384,38 @@ function tallyCalls(schedules) {
   });
 
   return callCounts;
+}
+
+function balanceCalls(schedules, callCounts) {
+  function balanceCallType(callType) {
+      let anesthesiologists = Object.keys(callCounts);
+      for (let i = 0; i < anesthesiologists.length; i++) {
+          let anesthesiologist = anesthesiologists[i];
+          if (callCounts[anesthesiologist][callType] > 4) {
+              // Look for a day where this anesthesiologist is on this type of call
+              for (let j = 0; j < schedules.length; j++) {
+                  if (schedules[j].anesthesiologist === anesthesiologist && schedules[j].call_type === callType) {
+                      // Found a day. Now look for a replacement anesthesiologist
+                      for (let k = 0; k < anesthesiologists.length; k++) {
+                          let replacement = anesthesiologists[k];
+                          
+                          // Make sure the replacement has less than 4 calls
+                          if (callCounts[replacement][callType] < 4 && schedules.some(s => s.on_call_date === schedules[j].on_call_date && s.call_type === 'third' && s.anesthesiologist === replacement)) {
+                              // Found a replacement. Swap their positions in the schedule
+                              let replacementScheduleIndex = schedules.findIndex(s => s.on_call_date === schedules[j].on_call_date && s.call_type === 'third' && s.anesthesiologist === replacement);
+                              schedules[j].anesthesiologist = replacement;
+                              schedules[replacementScheduleIndex].anesthesiologist = anesthesiologist;
+
+                              callCounts[anesthesiologist][callType]--;
+                              callCounts[replacement][callType]++;
+                              break;
+                          }
+                      }
+                  }
+              }
+          }
+      }
+  }
+  balanceCallType('first');
+  balanceCallType('second');
 }
