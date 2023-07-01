@@ -95,6 +95,25 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
       });
       return !isOnVacation;
     });
+    
+    let tomorrow = new Date(date);
+    tomorrow.setDate(tomorrow.getDate() + 1); 
+    
+    eligibleAnesthesiologists = anesthesiologists.filter(anesthesiologist => {
+      const isOnVacationToday = vacations.some(vacation => {
+        return vacation.anesthesiologist === anesthesiologist &&
+              new Date(vacation.startDate) <= date &&
+              new Date(vacation.endDate) >= date;
+      });
+      
+      const isOnVacationTomorrow = vacations.some(vacation => {
+        return vacation.anesthesiologist === anesthesiologist &&
+              new Date(vacation.startDate) <= tomorrow &&
+              new Date(vacation.endDate) >= tomorrow;
+      });
+      
+      return !isOnVacationToday && !isOnVacationTomorrow;
+    });
 
     if (i !== 0) {
       // Adding condition to exclude anesthesiologists that were first or second call the previous day
@@ -223,16 +242,23 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
           });
   
           if (eligibleAnesthesiologists.length < 2) {
-              eligibleAnesthesiologists = [...anesthesiologists]; 
-              eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
-                  const isOnVacation = vacations.some(vacation => {
-                      return vacation.anesthesiologist === anesthesiologist &&
-                          new Date(vacation.startDate) <= date &&
-                          new Date(vacation.endDate) >= date;
-                  });
-                  return !isOnVacation;
+            eligibleAnesthesiologists = [...anesthesiologists]; 
+            eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
+              const isOnVacationToday = vacations.some(vacation => {
+                return vacation.anesthesiologist === anesthesiologist &&
+                    new Date(vacation.startDate) <= date &&
+                    new Date(vacation.endDate) >= date;
               });
-          }
+              const tomorrow = new Date(date);
+              tomorrow.setDate(date.getDate() + 1);
+              const isOnVacationTomorrow = vacations.some(vacation => {
+                return vacation.anesthesiologist === anesthesiologist &&
+                    new Date(vacation.startDate) <= tomorrow &&
+                    new Date(vacation.endDate) >= tomorrow;
+              });
+              return !isOnVacationToday && !isOnVacationTomorrow;
+            });
+          }          
   
           // Assign two anesthesiologists for first and second calls randomly
           while (onCallAnesthesiologists.length < 2) {
@@ -351,7 +377,6 @@ function tallyCalls(schedules) {
     if (!callCounts.hasOwnProperty(anesthesiologist)) {
       callCounts[anesthesiologist] = { first: 0, second: 0, remaining: 0, secondToLast: 0, last: 0 };
     }
-
     callCounts[anesthesiologist][callType]++;
   });
 
