@@ -458,6 +458,10 @@ function balanceCalls(schedules, callCounts, firstCallAssignments) {
 
       if (callCounts[anesthesiologist][callType] > 4) {
         for (let j = 0; j < schedules.length; j++) {
+          // skip over weekends, i.e. don't swap weekends
+          if (isWeekend(schedules[j].on_call_date)) {
+            continue;
+          }
           if (schedules[j].anesthesiologist === anesthesiologist && schedules[j].call_type === callType) {
             for (let k = 0; k < anesthesiologists.length; k++) {
               let replacement = anesthesiologists[k];
@@ -510,4 +514,9 @@ function balanceCalls(schedules, callCounts, firstCallAssignments) {
   balanceCallType('second');
 }
 
+function isWeekend(dateStr) {
+  const date = new Date(dateStr);
+  const dayOfWeek = date.getDay();
+  return dayOfWeek === 0 || dayOfWeek === 6;
+}
 
