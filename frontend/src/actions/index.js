@@ -458,18 +458,21 @@ function balanceCalls(schedules, callCounts, firstCallAssignments) {
 
       if (callCounts[anesthesiologist][callType] > 4) {
         for (let j = 0; j < schedules.length; j++) {
-          // skip over weekends, i.e. don't swap weekends
-          if (isWeekend(schedules[j].on_call_date)) {
-            continue;
-          }
           if (schedules[j].anesthesiologist === anesthesiologist && schedules[j].call_type === callType) {
+            // skip over weekends, i.e. don't swap weekends
+            if (isWeekend(schedules[j].on_call_date)) {
+              continue;
+            }
+
             for (let k = 0; k < anesthesiologists.length; k++) {
               let replacement = anesthesiologists[k];
 
               if (callCounts[replacement][callType] < 4 && 
                   schedules.some(s => s.on_call_date === schedules[j].on_call_date && 
                                       s.call_type === 'third' && 
-                                      s.anesthesiologist === replacement)) {
+                                      s.anesthesiologist === replacement &&
+                                      !isWeekend(s.on_call_date))) {
+
                 let replacementScheduleIndex = schedules.findIndex(s => s.on_call_date === schedules[j].on_call_date && 
                   s.call_type === 'third' && s.anesthesiologist === replacement);
                 
@@ -478,6 +481,7 @@ function balanceCalls(schedules, callCounts, firstCallAssignments) {
                 
                 let replacementHasFirstCallAssignment = firstCallAssignments.some(a => a.anesthesiologistId === replacement && 
                   a.date === schedules[j].on_call_date);
+
                 if (!hasFirstCallAssignment && !replacementHasFirstCallAssignment) {
                   schedules[j].anesthesiologist = replacement;
                   schedules[replacementScheduleIndex].anesthesiologist = anesthesiologist;
@@ -515,8 +519,8 @@ function balanceCalls(schedules, callCounts, firstCallAssignments) {
 }
 
 function isWeekend(dateStr) {
-  const date = new Date(dateStr);
-  const dayOfWeek = date.getDay();
+  const date = new Date(dateStr + "T00:00:00Z");
+  const dayOfWeek = date.getUTCDay();
   return dayOfWeek === 0 || dayOfWeek === 6;
 }
 
