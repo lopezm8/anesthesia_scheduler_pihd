@@ -10,6 +10,8 @@ export const fetchAnesthesiologists = () => async (dispatch) => {
 
 export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) => {
   console.log('Selected Month: ', selectedMonth);
+  const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
+
 
   const anesthesiologists = getState().anesthesiologist;
   const vacations = getState().vacations;
@@ -27,6 +29,7 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   let previousThirdCall = null;
 
   let firstCallAssignmentsMap = {};
+  let onCallAnesthesiologistsPerDay = new Set();
 
   let firstCallOfWeek = [];
   let weekendCallAnesthesiologists = [];
@@ -52,6 +55,13 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
   let sundayFirstCall = null;
 
+  let firstCallAssignmentsObj = {};
+  firstCallAssignments.forEach(assignment => {
+    const assignmentDate = new Date(assignment.date);
+    const dateKey = assignmentDate.toISOString().split('T')[0];
+    firstCallAssignmentsObj[dateKey] = assignment;
+  });
+
   for (let i = 0; i < totalDays; i++) {
     let preserveFirstCall = false;
     if (date.getDay() === 0) {
@@ -60,6 +70,21 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     if (date.getDay() === 1) {
       firstCallOfWeek = [];
     }
+
+     const dateKey = date.toISOString().split('T')[0];
+    
+     if (firstCallAssignmentsObj[dateKey]) {
+      const firstCallAssignment = firstCallAssignmentsObj[dateKey];
+      schedules.push({
+        anesthesiologist: firstCallAssignment.anesthesiologistId,
+        on_call_date: dateKey,
+        call_type: 'first',
+      });
+      eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== firstCallAssignment.anesthesiologistId);
+      onCallAnesthesiologistsPerDay.add(firstCallAssignment.anesthesiologistId);
+    }    
+     
+    
 
     const isWeekday = date.getDay() >= 1 && date.getDay() <= 5;
 
@@ -98,35 +123,20 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     
     let tomorrow = new Date(date);
     tomorrow.setDate(tomorrow.getDate() + 1); 
-    
-    eligibleAnesthesiologists = anesthesiologists.filter(anesthesiologist => {
-      const isOnVacationToday = vacations.some(vacation => {
-        return vacation.anesthesiologist === anesthesiologist &&
-              new Date(vacation.startDate) <= date &&
-              new Date(vacation.endDate) >= date;
-      });
-      
-      const isOnVacationTomorrow = vacations.some(vacation => {
-        return vacation.anesthesiologist === anesthesiologist &&
-              new Date(vacation.startDate) <= tomorrow &&
-              new Date(vacation.endDate) >= tomorrow;
-      });
-      
-      return !isOnVacationToday && !isOnVacationTomorrow;
-    });
+
+    eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => !onCallAnesthesiologistsPerDay.has(anesthesiologist));
 
     if (i !== 0) {
-      // Adding condition to exclude anesthesiologists that were first or second call the previous day
-      const tomorrowFirstCallAssignment = firstCallAssignments.find(assignment => {
+      const todayFirstCallAssignment = firstCallAssignments.find(assignment => {
         const assignmentDate = new Date(assignment.date);
-        return assignmentDate.getDate() === date.getDate() + 1 &&
+        return assignmentDate.getDate() === date.getDate() &&
           assignmentDate.getMonth() === date.getMonth() &&
           assignmentDate.getFullYear() === date.getFullYear();
       });
-      
-      if (tomorrowFirstCallAssignment || i !== 0) {
+    
+      if (todayFirstCallAssignment || i !== 0) {
         eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist =>
-          (!tomorrowFirstCallAssignment || anesthesiologist !== tomorrowFirstCallAssignment.anesthesiologist) &&
+          (!todayFirstCallAssignment || anesthesiologist !== todayFirstCallAssignment.anesthesiologist) &&
           anesthesiologist !== previousFirstCall && anesthesiologist !== previousSecondCall
         );
       }
@@ -142,7 +152,6 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
           eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => anesthesiologist !== previousSecondCall).concat(previousSecondCall ? [previousSecondCall] : []);
         }
       } else {
-        // For other weekdays, remove the previous day's first and second call from the eligible list
         eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => 
           anesthesiologist !== previousFirstCall &&
           anesthesiologist !== previousSecondCall
@@ -153,7 +162,6 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
         return anesthesiologist !== previousSecondCall && anesthesiologist !== previousThirdCall;
       });
 
-      // If there is a first call assignment and the assigned anesthesiologist is eligible
       let firstCallAnesthesiologist = null;
 
       if (firstCallAssignment) {
@@ -180,12 +188,18 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
       }
 
       if(previousThirdCall && anesthesiologists.includes(previousThirdCall)) {
-        onCallAnesthesiologists.push(previousThirdCall);
-      }
+        const nextDayKey = new Date(date.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        if(!firstCallAssignmentsObj[nextDayKey] || (firstCallAssignmentsObj[nextDayKey] && firstCallAssignmentsObj[nextDayKey].anesthesiologist !== previousThirdCall)){
+            onCallAnesthesiologists.push(previousThirdCall);
+        }
+    }
       
-      if(previousSecondCall && anesthesiologists.includes(previousSecondCall)) {
-        onCallAnesthesiologists.push(previousSecondCall);
-      }
+    if(previousSecondCall && anesthesiologists.includes(previousSecondCall)) {
+        const nextDayKey = new Date(date.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        if(!firstCallAssignmentsObj[nextDayKey] || (firstCallAssignmentsObj[nextDayKey] && firstCallAssignmentsObj[nextDayKey].anesthesiologist !== previousSecondCall)){
+            onCallAnesthesiologists.push(previousSecondCall);
+        }
+    }
 
       // Swap first call if anesthesiologist is scheduled for the second time during the week
       if (!preserveFirstCall) {
@@ -294,14 +308,51 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
       }
   }
   
-    onCallAnesthesiologists.forEach((anesthesiologist, index) => {
-      const callType = index === 0 ? 'first' : (index === 1 ? 'second' : 'third');
-      schedules.push({
-        anesthesiologist: anesthesiologist,
-        on_call_date: date.toISOString().split('T')[0],
-        call_type: callType,
-      });
+  onCallAnesthesiologists.forEach((anesthesiologist, index) => {
+    const callType = index === 0 ? 'first' : (index === 1 ? 'second' : 'third');
+  
+    if (callType === 'first') {
+      const secondOrThirdCallDayBefore = schedules.some(schedule => 
+        new Date(schedule.on_call_date).getTime() === new Date(date.getTime() - ONE_DAY_IN_MS).getTime() &&
+        (schedule.call_type === 'second' || schedule.call_type === 'third') &&
+        schedule.anesthesiologist === anesthesiologist
+      );
+      if (secondOrThirdCallDayBefore) {
+        return;
+      }
+  
+      const firstCallExists = schedules.some(schedule => 
+        schedule.on_call_date === date.toISOString().split('T')[0] && 
+        schedule.call_type === 'first'
+      );
+  
+      if (firstCallExists) {
+        return;
+      }
+    }
+    
+    else {
+      const firstCallNextDay = schedules.some(schedule => 
+        new Date(schedule.on_call_date).getTime() === new Date(date.getTime() + ONE_DAY_IN_MS).getTime() &&
+        schedule.call_type === 'first' &&
+        schedule.anesthesiologist === anesthesiologist
+      );
+  
+      if (firstCallNextDay) {
+        return;
+      }
+    }
+  
+    schedules.push({
+      anesthesiologist: anesthesiologist,
+      on_call_date: date.toISOString().split('T')[0],
+      call_type: callType,
     });
+  });
+  
+
+
+    onCallAnesthesiologistsPerDay.clear();
 
     previousFirstCall = onCallAnesthesiologists[0];
     previousSecondCall = onCallAnesthesiologists[1];
@@ -310,10 +361,26 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     date.setDate(date.getDate() + 1);
   }
 
+  let schedulesCopy = [...schedules];
+
+  schedulesCopy.forEach((schedule, index) => {
+    if (schedule.call_type !== 'first') {
+      return;
+    }
+
+    let duplicateIndex = schedules.findIndex(dupSchedule =>
+      dupSchedule.call_type === 'third' &&
+      dupSchedule.anesthesiologist === schedule.anesthesiologist &&
+      dupSchedule.on_call_date === schedule.on_call_date
+    );
+
+    if (duplicateIndex !== -1) {
+      schedules.splice(duplicateIndex, 1);
+    }
+  });
+
   let callCounts = tallyCalls(schedules);
   console.log('callCounts: ', callCounts);
-
-  balanceCalls(schedules, callCounts, firstCallAssignments);
 
   dispatch({
     type: 'SET_CALL_COUNTS',

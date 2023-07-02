@@ -7,7 +7,8 @@ const AnesthesiologistList = () => {
   const anesthesiologists = useSelector(state => state.anesthesiologist) || [];
   const vacations = useSelector(state => state.vacations) || [];
   const callCounts = useSelector(state => state.schedule.callCounts) || {};
-  const firstCalls = useSelector(state => state.firstCall.firstCallAssignments) || [];
+  const firstCalls = useSelector(state => state.schedule.firstCallAssignments) || [];
+  console.log("firstcalls in anesList here: ya ", firstCalls);
   const selectedDate = useSelector(state => state.schedule.selectedDate) || ''; 
   console.log('AnesList vacations', vacations);
 

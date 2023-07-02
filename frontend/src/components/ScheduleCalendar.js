@@ -119,27 +119,7 @@ const ScheduleCalendar = ({ events, selectedDate }) => {
 const mapStateToProps = state => {
   console.log("State in ScheduleCalendar mapStateToProps: ", state);
   const schedulesByDate = groupBy(state.schedule.schedules, 'on_call_date');
-  const regularEvents = Object.values(schedulesByDate).flatMap((schedulesForOneDay, index) => {
-    schedulesForOneDay.sort((a, b) => {
-      const isAOnFirstCall = state.schedule.firstCallAssignments.some(assignment =>
-        assignment.date === a.on_call_date &&
-        assignment.anesthesiologistId === a.anesthesiologist
-      );
-
-      const isBOnFirstCall = state.schedule.firstCallAssignments.some(assignment =>
-        assignment.date === b.on_call_date &&
-        assignment.anesthesiologistId === b.anesthesiologist
-      );
-
-      if (isAOnFirstCall && !isBOnFirstCall) {
-        return -1;
-      } else if (!isAOnFirstCall && isBOnFirstCall) {
-        return 1;
-      } else {
-        return 0;
-      }
-    });
-
+  const regularEvents = Object.values(schedulesByDate).flatMap((schedulesForOneDay) => {
     return schedulesForOneDay.map((schedule, index) => {
       const [year, month, day] = schedule.on_call_date.split("-");
       const event = {
@@ -157,14 +137,9 @@ const mapStateToProps = state => {
   const events = [...regularEvents].sort((a, b) => a.start - b.start);
   const callCounts = countCalls(events);
 
-  console.log('Call counts before balance: ', callCounts);
-
-  balanceCalls(state.schedule.schedules, callCounts, state.schedule.firstCallAssignments);
-
-  console.log('Call counts after balance: ', callCounts);
-
   return { events, vacations: state.vacations, firstCallAssignments: state.schedule.firstCallAssignments };
 
 };
+
 
 export default connect(mapStateToProps)(ScheduleCalendar);
