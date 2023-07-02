@@ -200,8 +200,6 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
             onCallAnesthesiologists.push(previousSecondCall);
         }
     }
-
-      // Swap first call if anesthesiologist is scheduled for the second time during the week
       if (!preserveFirstCall) {
         if (!preserveFirstCall && firstCallOfWeek.includes(onCallAnesthesiologists[0])) {
           const replacement = onCallAnesthesiologists.find((anesthesiologist, index) => {
@@ -226,8 +224,6 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     }
 
       firstCallOfWeek.push(onCallAnesthesiologists[0]);
-
-      // Check if first call assignment was not correctly assigned due to weekend call
       if (firstCallAssignment) {
         const firstCallAnesthesiologist = onCallAnesthesiologists.find(anesthesiologist => anesthesiologist === firstCallAssignment.anesthesiologist);
         if (firstCallAnesthesiologist) {
@@ -381,13 +377,16 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
   let callCounts = tallyCalls(schedules);
   console.log('callCounts: ', callCounts);
+  console.log("This is the index.js schedules before balancing: ", schedules);
+  firstCallAssignments = getState().schedule.firstCallAssignments;
+  console.log("This is the first call assignments going into balance calls ", firstCallAssignments);
+  balanceCalls(schedules, callCounts, firstCallAssignments);
+  callCounts = tallyCalls(schedules);
 
   dispatch({
     type: 'SET_CALL_COUNTS',
     payload: callCounts,
   });
-  console.log("This is the callCounts: ", callCounts);
-  console.log("This is the index.js schedules: ", schedules);
   dispatch({ type: 'SET_SCHEDULES', payload: schedules });
 };
 
@@ -450,46 +449,55 @@ function tallyCalls(schedules) {
   return callCounts;
 }
 
-function balanceCalls(schedules, callCounts, firstCallAssignment) {
+function balanceCalls(schedules, callCounts, firstCallAssignments) {
   function balanceCallType(callType) {
     let anesthesiologists = Object.keys(callCounts);
+
     for (let i = 0; i < anesthesiologists.length; i++) {
       let anesthesiologist = anesthesiologists[i];
-
-      if (firstCallAssignment && firstCallAssignment.anesthesiologist === anesthesiologist) {
-        continue;
-      }
 
       if (callCounts[anesthesiologist][callType] > 4) {
         for (let j = 0; j < schedules.length; j++) {
           if (schedules[j].anesthesiologist === anesthesiologist && schedules[j].call_type === callType) {
             for (let k = 0; k < anesthesiologists.length; k++) {
               let replacement = anesthesiologists[k];
-              if (callCounts[replacement][callType] < 4 && schedules.some(s => s.on_call_date === schedules[j].on_call_date && s.call_type === 'third' && s.anesthesiologist === replacement)) {
-                let replacementScheduleIndex = schedules.findIndex(s => s.on_call_date === schedules[j].on_call_date && s.call_type === 'third' && s.anesthesiologist === replacement);
-                schedules[j].anesthesiologist = replacement;
-                schedules[replacementScheduleIndex].anesthesiologist = anesthesiologist;
 
-                callCounts[anesthesiologist][callType]--;
-                callCounts[replacement][callType]++;
+              if (callCounts[replacement][callType] < 4 && 
+                  schedules.some(s => s.on_call_date === schedules[j].on_call_date && 
+                                      s.call_type === 'third' && 
+                                      s.anesthesiologist === replacement)) {
+                let replacementScheduleIndex = schedules.findIndex(s => s.on_call_date === schedules[j].on_call_date && 
+                  s.call_type === 'third' && s.anesthesiologist === replacement);
+                
+                let hasFirstCallAssignment = firstCallAssignments.some(a => a.anesthesiologistId === anesthesiologist && 
+                  a.date === schedules[j].on_call_date);
+                
+                let replacementHasFirstCallAssignment = firstCallAssignments.some(a => a.anesthesiologistId === replacement && 
+                  a.date === schedules[j].on_call_date);
+                if (!hasFirstCallAssignment && !replacementHasFirstCallAssignment) {
+                  schedules[j].anesthesiologist = replacement;
+                  schedules[replacementScheduleIndex].anesthesiologist = anesthesiologist;
 
-                if(callType === 'first') {
-                  let nextDay = new Date(schedules[j].on_call_date);
-                  nextDay.setDate(nextDay.getDate() + 1);
-                  let nextDayStr = nextDay.toISOString().split('T')[0];
+                  callCounts[anesthesiologist][callType]--;
+                  callCounts[replacement][callType]++;
 
-                  let nextDaySchedules = schedules.filter(s => s.on_call_date === nextDayStr);
-                  for (let l = 0; l < nextDaySchedules.length; l++) {
-                    if (nextDaySchedules[l].anesthesiologist === replacement) {
-                      nextDaySchedules[l].anesthesiologist = '';
-                    }
-                    if (nextDaySchedules[l].anesthesiologist === '' && anesthesiologist !== firstCallAssignment.anesthesiologist) {
-                      nextDaySchedules[l].anesthesiologist = anesthesiologist;
+                  if(callType === 'first') {
+                    let nextDay = new Date(schedules[j].on_call_date);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    let nextDayStr = nextDay.toISOString().split('T')[0];
+
+                    let nextDaySchedules = schedules.filter(s => s.on_call_date === nextDayStr);
+                    for (let l = 0; l < nextDaySchedules.length; l++) {
+                      if (nextDaySchedules[l].anesthesiologist === replacement) {
+                        nextDaySchedules[l].anesthesiologist = '';
+                      }
+                      if (nextDaySchedules[l].anesthesiologist === '' && anesthesiologist !== firstCallAssignments.anesthesiologist) {
+                        nextDaySchedules[l].anesthesiologist = anesthesiologist;
+                      }
                     }
                   }
+                  break;
                 }
-
-                break;
               }
             }
           }
@@ -497,6 +505,9 @@ function balanceCalls(schedules, callCounts, firstCallAssignment) {
       }
     }
   }
+
   balanceCallType('first');
   balanceCallType('second');
 }
+
+
