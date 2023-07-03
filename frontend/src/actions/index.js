@@ -383,11 +383,74 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   balanceCalls(schedules, callCounts, firstCallAssignments);
   callCounts = tallyCalls(schedules);
 
-  dispatch({
-    type: 'SET_CALL_COUNTS',
-    payload: callCounts,
-  });
-  dispatch({ type: 'SET_SCHEDULES', payload: schedules });
+for (let i = 0; i < schedules.length; i++) {
+  const currentSchedule = schedules[i];
+  const currentDate = new Date(currentSchedule.on_call_date);
+  const dayOfWeek = currentDate.getUTCDay();
+
+  if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+    const previousDay = new Date(currentDate.getTime() - ONE_DAY_IN_MS);
+    const previousDayStr = previousDay.toISOString().split('T')[0];
+
+    const previousFirstCall = schedules.find(schedule =>
+      schedule.on_call_date === previousDayStr &&
+      schedule.call_type === 'first' &&
+      schedule.anesthesiologist === currentSchedule.anesthesiologist
+    );
+
+    if (previousFirstCall) {
+      schedules.splice(i, 1);
+      i--;
+    }
+  }
+}
+
+for (let i = 0; i < schedules.length; i++) {
+  const currentSchedule = schedules[i];
+  const currentDate = new Date(currentSchedule.on_call_date);
+  const dayOfWeek = currentDate.getUTCDay();
+
+  if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+    // get currently scheduled anesthesiologists
+    const scheduledAnesthesiologists = schedules
+      .filter(schedule => schedule.on_call_date === currentSchedule.on_call_date)
+      .map(schedule => schedule.anesthesiologist);
+    
+    // filter out anesthesiologists on vacation or first call the day prior
+    const eligibleAnesthesiologists = [...anesthesiologists]
+      .filter(anesthesiologist =>
+        !vacations.some(vacation =>
+          vacation.anesthesiologist === anesthesiologist &&
+          new Date(vacation.startDate) <= currentDate &&
+          new Date(vacation.endDate) >= currentDate
+        ) &&
+        !schedules.some(schedule =>
+          schedule.anesthesiologist === anesthesiologist &&
+          new Date(schedule.on_call_date).getTime() === new Date(currentDate.getTime() - ONE_DAY_IN_MS).getTime() &&
+          schedule.call_type === 'first'
+        )
+      );
+      
+    for (let anesthesiologist of eligibleAnesthesiologists) {
+      if (!scheduledAnesthesiologists.includes(anesthesiologist)) {
+        schedules.push({
+          anesthesiologist: anesthesiologist,
+          on_call_date: currentDate.toISOString().split('T')[0],
+          call_type: 'third',
+        });
+      }
+    }
+  }
+}
+
+// Update call counts after processing day-off after 'first' calls
+callCounts = tallyCalls(schedules);
+
+dispatch({
+  type: 'SET_CALL_COUNTS',
+  payload: callCounts,
+});
+dispatch({ type: 'SET_SCHEDULES', payload: schedules });
 };
 
 
