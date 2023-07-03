@@ -450,16 +450,28 @@ function tallyCalls(schedules) {
 }
 
 function balanceCalls(schedules, callCounts, firstCallAssignments) {
+  let changeMade = true;
+  
+  while(changeMade) {
+    changeMade = false;
+    
+    balanceCallType('first');
+    balanceCallType('second');
+  }
+  
   function balanceCallType(callType) {
     let anesthesiologists = Object.keys(callCounts);
 
     for (let i = 0; i < anesthesiologists.length; i++) {
       let anesthesiologist = anesthesiologists[i];
 
-      if (callCounts[anesthesiologist][callType] > 4) {
+      let minCallCount = Math.min(...anesthesiologists.map(a => callCounts[a][callType]));
+      let maxCallCount = Math.max(...anesthesiologists.map(a => callCounts[a][callType]));
+      let difference = maxCallCount - minCallCount;
+      
+      if (difference > 1 && callCounts[anesthesiologist][callType] === maxCallCount) {
         for (let j = 0; j < schedules.length; j++) {
           if (schedules[j].anesthesiologist === anesthesiologist && schedules[j].call_type === callType) {
-            // skip over weekends, i.e. don't swap weekends
             if (isWeekend(schedules[j].on_call_date)) {
               continue;
             }
@@ -467,12 +479,11 @@ function balanceCalls(schedules, callCounts, firstCallAssignments) {
             for (let k = 0; k < anesthesiologists.length; k++) {
               let replacement = anesthesiologists[k];
 
-              if (callCounts[replacement][callType] < 4 && 
+              if (callCounts[replacement][callType] === minCallCount && 
                   schedules.some(s => s.on_call_date === schedules[j].on_call_date && 
                                       s.call_type === 'third' && 
                                       s.anesthesiologist === replacement &&
                                       !isWeekend(s.on_call_date))) {
-
                 let replacementScheduleIndex = schedules.findIndex(s => s.on_call_date === schedules[j].on_call_date && 
                   s.call_type === 'third' && s.anesthesiologist === replacement);
                 
@@ -504,18 +515,22 @@ function balanceCalls(schedules, callCounts, firstCallAssignments) {
                       }
                     }
                   }
+                  changeMade = true;
                   break;
                 }
               }
             }
+            if (changeMade) {
+              break;
+            }
           }
+        }
+        if (changeMade) {
+          break;
         }
       }
     }
   }
-
-  balanceCallType('first');
-  balanceCallType('second');
 }
 
 function isWeekend(dateStr) {
