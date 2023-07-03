@@ -1,0 +1,17 @@
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.center-container {
+    display: flex;
+    justify-content: center;
+}
+
+.generate-schedule {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}

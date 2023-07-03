@@ -2,12 +2,8 @@ import React, { useState } from 'react';
 import { Provider } from 'react-redux';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import store from './store';
-import AnesthesiologistForm from './components/AnesthesiologistForm';
-import AnesthesiologistList from './components/AnesthesiologistList';
-import GenerateScheduleButton from './components/GenerateScheduleButton';
+import Dashboard from './Dashboard';
 import ScheduleCalendar from './components/ScheduleCalendar';
-import DateSelector from './components/DateSelector';
-
 
 const App = () => {
   
@@ -18,20 +14,15 @@ const App = () => {
     <Provider store={store}>
       <Router>
         <Routes>
-          <Route path="/anesthesiologists" element={<AnesthesiologistList />} />
-          <Route path="/anesthesiologists/new" element={<AnesthesiologistForm />} />
           <Route path="/schedule" element={
               <div>
-                  <DateSelector selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
-                  <ScheduleCalendar selectedDate={selectedDate} />
+                  <Dashboard selectedDate={selectedDate} setSelectedDate={setSelectedDate}/>
+                  <ScheduleCalendar selectedDate={selectedDate} setSelectedDate={setSelectedDate}/>
               </div>
           }/>
           <Route path="/" element={
             <div>
-                <AnesthesiologistForm selectedDate={selectedDate} setSelectedDate={setSelectedDate}/>
-                <AnesthesiologistList />
-                <GenerateScheduleButton selectedDate={selectedDate} />
-                <DateSelector selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+                <Dashboard selectedDate={selectedDate} setSelectedDate={setSelectedDate}/>
                 <ScheduleCalendar selectedDate={selectedDate} setSelectedDate={setSelectedDate}/>
             </div>
           }/>

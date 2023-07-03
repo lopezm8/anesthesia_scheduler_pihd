@@ -16,7 +16,7 @@ function AnesthesiologistForm({selectedDate}) {
 
   return (
     <div className="form-container">
-      <div>
+      <div className="add-anesthesiologist-box">
         <h2>Add Anesthesiologist</h2>
         <form onSubmit={(e) => {
           e.preventDefault();
@@ -28,7 +28,7 @@ function AnesthesiologistForm({selectedDate}) {
         </form>
       </div>
 
-      <div>
+      <div className="add-vacation-box">
         <h2>Add Vacation</h2>
         <form onSubmit={(e) => {
           e.preventDefault();
@@ -44,7 +44,7 @@ function AnesthesiologistForm({selectedDate}) {
         </form>
       </div>
 
-      <div>
+      <div className="add-first-call-box">
         <h2>Add First Call</h2>
         <form onSubmit={(e) => {
           e.preventDefault();

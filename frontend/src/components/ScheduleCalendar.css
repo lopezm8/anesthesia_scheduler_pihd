@@ -1,18 +1,14 @@
-.content-box {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.anesthesiologist-box, .vacations-box, .first-calls-box {
-  flex: 1;
-  margin: 0 10px;
-}
-
-.form-container {
+.content-box, .form-container {
   display: flex;
   justify-content: space-between;
-  gap: 50px;
 }
+
+.anesthesiologist-box, .vacations-box, .first-calls-box, .add-anesthesiologist-box, .add-vacation-box, .add-first-call-box {
+  flex: 1;
+  margin: 0 10px;
+  box-sizing: border-box;
+}
+
 
 .rbc-event {
   height: auto !important;
