@@ -1,16 +1,23 @@
-import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { setSelectedDate } from '../actions';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { deleteAnesthesiologist, editAnesthesiologist } from '../actions';
+import EditAnesthesiologistForm from './EditAnesthesiologistForm';
 
 const AnesthesiologistList = () => {
+  const [editingIndex, setEditingIndex] = useState(null);
   const dispatch = useDispatch();
   const anesthesiologists = useSelector(state => state.anesthesiologist) || [];
   const vacations = useSelector(state => state.vacations) || [];
   const callCounts = useSelector(state => state.schedule.callCounts) || {};
   const firstCalls = useSelector(state => state.schedule.firstCallAssignments) || [];
-  console.log("firstcalls in anesList here: ya ", firstCalls);
-  const selectedDate = useSelector(state => state.schedule.selectedDate) || ''; 
-  console.log('AnesList vacations', vacations);
+
+  const handleDelete = index => {
+    dispatch(deleteAnesthesiologist(index));
+  };
+
+  const handleEdit = (index, newAnesthesiologist) => {
+    dispatch(editAnesthesiologist(index, newAnesthesiologist));
+  };
 
   const formatDate = (dateString) => {
     let date = new Date(dateString);
@@ -31,13 +38,25 @@ const AnesthesiologistList = () => {
       <div className="anesthesiologist-box">
         <h2>Anesthesiologists</h2>
         <ul>
-          {anesthesiologists.map((anesthesiologist, index) =>
+          {anesthesiologists.map((anesthesiologist, index) => (
             <li key={index}>
-              {anesthesiologist} - 
-              First Calls: {callCounts[anesthesiologist]?.first || 0}, 
-              Second Calls: {callCounts[anesthesiologist]?.second || 0}
+              {editingIndex === index ? (
+                <EditAnesthesiologistForm
+                  index={index}
+                  name={anesthesiologist}
+                  setEditing={() => setEditingIndex(null)}
+                />
+              ) : (
+                <>
+                  {anesthesiologist} - 
+                  First Calls: {callCounts[anesthesiologist]?.first || 0}, 
+                  Second Calls: {callCounts[anesthesiologist]?.second || 0}
+                  <button onClick={() => setEditingIndex(index)}>Edit</button>
+                  <button onClick={() => handleDelete(index)}>Delete</button>
+                </>
+              )}
             </li>
-          )}
+          ))}
         </ul>
       </div>
       <div className="vacations-box">

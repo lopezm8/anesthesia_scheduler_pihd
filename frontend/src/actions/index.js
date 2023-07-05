@@ -453,14 +453,6 @@ dispatch({
 dispatch({ type: 'SET_SCHEDULES', payload: schedules });
 };
 
-
-export const addAnesthesiologist = (newAnesthesiologist) => {
-  return {
-    type: ADD_ANESTHESIOLOGIST,
-    payload: newAnesthesiologist
-  };
-};
-
 export const fetchSchedules = () => async (dispatch) => {
   dispatch({ type: FETCH_SCHEDULES });
 
@@ -602,3 +594,18 @@ function isWeekend(dateStr) {
   return dayOfWeek === 0 || dayOfWeek === 6;
 }
 
+export const addAnesthesiologist = anesthesiologist => ({
+  type: 'ADD_ANESTHESIOLOGIST',
+  anesthesiologist,
+});
+
+export const editAnesthesiologist = (index, newAnesthesiologist) => ({
+  type: 'EDIT_ANESTHESIOLOGIST',
+  index,
+  newAnesthesiologist,
+});
+
+export const deleteAnesthesiologist = index => ({
+  type: 'DELETE_ANESTHESIOLOGIST',
+  index,
+});

@@ -1,11 +1,15 @@
 export const anesthesiologistReducer = (state = [], action) => {
   switch (action.type) {
     case 'FETCH_ANESTHESIOLOGISTS':
-      console.log('FETCH_ANESTHESIOLOGISTS action', action.payload);
       return action.payload;
     case 'ADD_ANESTHESIOLOGIST':
-      console.log('ADD_ANESTHESIOLOGIST action', action.payload);
-      return [...state, action.payload]; 
+      return [...state, action.anesthesiologist];
+    case 'EDIT_ANESTHESIOLOGIST':
+      return state.map((anesthesiologist, index) => 
+        index === action.index ? action.newAnesthesiologist : anesthesiologist
+      );
+    case 'DELETE_ANESTHESIOLOGIST':
+      return state.filter((_, index) => index !== action.index);
     default:
       return state;
   }
