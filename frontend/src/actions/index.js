@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FETCH_ANESTHESIOLOGISTS, ADD_ANESTHESIOLOGIST, SET_SCHEDULES, FETCH_SCHEDULES, SET_FIRST_CALL, SET_SELECTED_DATE } from './types';
+import { FETCH_ANESTHESIOLOGISTS, ADD_ANESTHESIOLOGIST, SET_SCHEDULES, FETCH_SCHEDULES, SET_FIRST_CALL, SET_SELECTED_DATE, EDIT_VACATION, DELETE_VACATION } from './types';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -609,3 +609,18 @@ export const deleteAnesthesiologist = index => ({
   type: 'DELETE_ANESTHESIOLOGIST',
   index,
 });
+
+export const editVacation = (index, newVacation) => dispatch => {
+  dispatch({
+    type: EDIT_VACATION,
+    index,
+    newVacation,
+  });
+};
+
+export const deleteVacation = index => dispatch => {
+  dispatch({
+    type: DELETE_VACATION,
+    index,
+  });
+};
