@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteAnesthesiologist, editAnesthesiologist, editVacation, deleteVacation } from '../actions';
+import { deleteAnesthesiologist, editAnesthesiologist, editVacation, deleteVacation, editFirstCall, deleteFirstCall } from '../actions';
 import EditAnesthesiologistForm from './EditAnesthesiologistForm';
 import EditVacationForm from './EditVacationForm';
+import EditFirstCallForm from './EditFirstCallForm';
 
 const AnesthesiologistList = () => {
   const [editingIndex, setEditingIndex] = useState(null);
@@ -31,6 +32,22 @@ const AnesthesiologistList = () => {
     dispatch(deleteVacation(index));
   };
 
+  const [editingFirstCall, setEditingFirstCall] = useState({ anesthesiologistId: null, index: null });
+
+  const handleEditFirstCall = (index, anesthesiologistId) => {
+    setEditingFirstCall({ anesthesiologistId, index });
+  };
+
+  const handleDeleteFirstCall = (index, anesthesiologistId) => {
+    const actualIndex = firstCalls.findIndex(call => call.anesthesiologistId === anesthesiologistId && call.date === firstCalls[index].date);
+    dispatch(deleteFirstCall(actualIndex));
+  };
+  
+  const handleFirstCallEdit = (index, updatedCall) => {
+    const actualIndex = firstCalls.findIndex(call => call.anesthesiologistId === updatedCall.anesthesiologistId && call.date === firstCalls[index].date);
+    dispatch(editFirstCall(actualIndex, updatedCall));
+    setEditingFirstCall({ anesthesiologistId: null, index: null });
+};
 
   const formatDate = (dateString) => {
     let date = new Date(dateString);
@@ -115,8 +132,23 @@ const AnesthesiologistList = () => {
             return anesFirstCalls.length > 0 && (
               <li key={index}>
                 {anesthesiologist}: {anesFirstCalls.map((call, cIndex) => 
-                  `${formatDate(new Date(call.date))}`
-                ).join(', ')}
+                  <div key={cIndex}>
+                    {formatDate(new Date(call.date))}
+                    {editingFirstCall.anesthesiologistId === anesthesiologist && editingFirstCall.index === cIndex ? (
+                      <EditFirstCallForm
+                        index={cIndex}
+                        call={call}
+                        handleEdit={handleFirstCallEdit}
+                        setEditing={() => setEditingFirstCall({ anesthesiologist: null, index: null })}
+                      />
+                    ) : (
+                      <>
+                        <button onClick={() => handleEditFirstCall(cIndex, anesthesiologist)}>Edit</button>
+                        <button onClick={() => handleDeleteFirstCall(cIndex, anesthesiologist)}>Delete</button>
+                      </>
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}

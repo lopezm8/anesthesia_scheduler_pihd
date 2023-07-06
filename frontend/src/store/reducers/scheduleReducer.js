@@ -46,6 +46,18 @@ export const scheduleReducer = (state = initialState, action) => {
       return { 
         ...state, selectedDate: action.date 
       };
+    case 'EDIT_FIRST_CALL':
+      return {
+        ...state,
+        firstCallAssignments: state.firstCallAssignments.map((assignment, index) => 
+          index === action.index ? action.updatedAssignment : assignment
+        )
+      };
+    case 'DELETE_FIRST_CALL':
+      return {
+        ...state,
+        firstCallAssignments: state.firstCallAssignments.filter((_, index) => index !== action.index)
+      };
     
     default:
       return state;

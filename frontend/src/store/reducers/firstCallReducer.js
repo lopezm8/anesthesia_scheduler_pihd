@@ -10,4 +10,3 @@ export const firstCallReducer = (state = initialState, action) => {
       return state;
   }
 };
-

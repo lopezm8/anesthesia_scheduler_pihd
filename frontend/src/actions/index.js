@@ -624,3 +624,18 @@ export const deleteVacation = index => dispatch => {
     index,
   });
 };
+
+export const editFirstCall = (index, updatedAssignment) => {
+  return {
+    type: 'EDIT_FIRST_CALL',
+    index,
+    updatedAssignment
+  }
+};
+
+export const deleteFirstCall = (index) => {
+  return {
+    type: 'DELETE_FIRST_CALL',
+    index
+  }
+};
