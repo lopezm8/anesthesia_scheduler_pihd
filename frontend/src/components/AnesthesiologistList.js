@@ -4,6 +4,13 @@ import { deleteAnesthesiologist, editAnesthesiologist, editVacation, deleteVacat
 import EditAnesthesiologistForm from './EditAnesthesiologistForm';
 import EditVacationForm from './EditVacationForm';
 import EditFirstCallForm from './EditFirstCallForm';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { far } from '@fortawesome/free-regular-svg-icons';
+import { fas } from '@fortawesome/free-solid-svg-icons';
+import './ScheduleCalendar.css';
+
+library.add(fas, far);
 
 const AnesthesiologistList = () => {
   const [editingIndex, setEditingIndex] = useState(null);
@@ -81,8 +88,8 @@ const AnesthesiologistList = () => {
                   {anesthesiologist} - 
                   First Calls: {callCounts[anesthesiologist]?.first || 0}, 
                   Second Calls: {callCounts[anesthesiologist]?.second || 0}
-                  <button onClick={() => setEditingIndex(index)}>Edit</button>
-                  <button onClick={() => handleDelete(index)}>Delete</button>
+                  <FontAwesomeIcon icon={['far', 'pen-to-square']} onClick={() => setEditingIndex(index)} className="icon-button-edit"/>
+                  <FontAwesomeIcon icon={['far', 'trash-can']} onClick={() => handleDelete(index)} className="icon-button" />
                 </>
               )}
             </li>
@@ -112,8 +119,8 @@ const AnesthesiologistList = () => {
                       />
                     ) : (
                       <>
-                        <button onClick={() => handleEditVacation(vIndex, anesthesiologist)}>Edit</button>
-                        <button onClick={() => handleDeleteVacation(vIndex)}>Delete</button>
+                        <FontAwesomeIcon icon={['far', 'pen-to-square']} onClick={() => handleEditVacation(vIndex, anesthesiologist)} className="icon-button-edit" />
+                        <FontAwesomeIcon icon={['far', 'trash-can']} onClick={() => handleDeleteVacation(vIndex)} className="icon-button" />
                       </>
                     )}
                   </div>
@@ -143,8 +150,8 @@ const AnesthesiologistList = () => {
                       />
                     ) : (
                       <>
-                        <button onClick={() => handleEditFirstCall(cIndex, anesthesiologist)}>Edit</button>
-                        <button onClick={() => handleDeleteFirstCall(cIndex, anesthesiologist)}>Delete</button>
+                        <FontAwesomeIcon icon={['far', 'pen-to-square']} onClick={() => handleEditFirstCall(cIndex, anesthesiologist)} className="icon-button-edit" />
+                        <FontAwesomeIcon icon={['far', 'trash-can']} onClick={() => handleDeleteFirstCall(cIndex, anesthesiologist)} className="icon-button" />
                       </>
                     )}
                   </div>
