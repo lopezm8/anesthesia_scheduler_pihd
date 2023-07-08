@@ -12,6 +12,7 @@ function AnesthesiologistForm({selectedDate}) {
   useEffect(() => {
     setVacationStart(getFirstDayOfMonth(selectedDate));
     setVacationEnd(getLastDayOfMonth(selectedDate));
+    setFirstCallDate(getFirstDayOfMonth(selectedDate));
   }, [selectedDate]);
 
   return (
@@ -66,13 +67,13 @@ function AnesthesiologistForm({selectedDate}) {
 }
 
 function getFirstDayOfMonth(dateString) {
-  const date = new Date(dateString);
-  return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+  const [year, month] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, 1).toISOString().split('T')[0];
 }
 
 function getLastDayOfMonth(dateString) {
-  const date = new Date(dateString);
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+  const [year, month] = dateString.split('-').map(Number);
+  return new Date(year, month, 0).toISOString().split('T')[0];
 }
 
 function parseDate(dateString) {
