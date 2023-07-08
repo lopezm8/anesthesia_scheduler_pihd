@@ -32,7 +32,7 @@ function AnesthesiologistForm({selectedDate}) {
         <h2>Add Vacation</h2>
         <form onSubmit={(e) => {
           e.preventDefault();
-          dispatch(addVacation(anesthesiologist, vacationStart, vacationEnd));
+          dispatch(addVacation(anesthesiologist, parseDate(vacationStart), parseDate(vacationEnd)));
           setAnesthesiologist('');
           setVacationStart('');
           setVacationEnd('');
@@ -67,12 +67,17 @@ function AnesthesiologistForm({selectedDate}) {
 
 function getFirstDayOfMonth(dateString) {
   const date = new Date(dateString);
-  return new Date(date.getFullYear(), date.getMonth() + 1, 1).toISOString().split('T')[0];
+  return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
 }
 
 function getLastDayOfMonth(dateString) {
   const date = new Date(dateString);
-  return new Date(date.getFullYear(), date.getMonth() + 2, 0).toISOString().split('T')[0];
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+}
+
+function parseDate(dateString) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
 }
 
 export default AnesthesiologistForm;

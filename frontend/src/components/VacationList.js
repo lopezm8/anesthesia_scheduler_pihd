@@ -20,15 +20,22 @@ const VacationList = ({ vacations }) => {
   };
 
   const handleEditChange = (e) => {
+    let value = e.target.value;
+    
+    if (e.target.name === 'startDate' || e.target.name === 'endDate') {
+      value = new Date(value).toISOString().split('T')[0];
+    }
+  
     setEditVacationData({
       ...editVacationData,
-      [e.target.name]: e.target.value
+      [e.target.name]: value
     });
-  };
+  };  
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    dispatch(editVacation(editIndex, editVacationData));
+    const { anesthesiologist, startDate, endDate } = editVacationData;
+    dispatch(editVacation(editIndex, { anesthesiologist, startDate, endDate }));
     setShowEditForm(false);
   };
 

@@ -464,7 +464,7 @@ export const ADD_VACATION = 'ADD_VACATION';
 
 export const addVacation = (anesthesiologist, startDate, endDate) => {
   const adjustedEndDate = new Date(endDate);
-  adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+  adjustedEndDate.setDate(adjustedEndDate.getDate());
   
   return {
     type: ADD_VACATION,

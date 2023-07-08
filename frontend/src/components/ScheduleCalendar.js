@@ -119,10 +119,13 @@ function isOnVacation(date, anesthesiologist, vacations) {
     const adjustedStartDate = new Date(vacation.startDate);
     adjustedStartDate.setDate(adjustedStartDate.getDate() + 1);
 
+    const adjustedEndDate = new Date(new Date(vacation.endDate).getTime() + 24 * 60 * 60 * 1000);
+    adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+
     return (
       vacation.anesthesiologist === anesthesiologist && 
       formatDate(adjustedStartDate) <= dateStr && 
-      dateStr < formatDate(vacation.endDate)
+      dateStr < formatDate(adjustedEndDate)
     );
   });
 }

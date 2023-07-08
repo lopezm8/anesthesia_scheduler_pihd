@@ -66,7 +66,7 @@ const AnesthesiologistList = () => {
   const decrementDateByOneDay = (dateString) => {
     let date = new Date(dateString);
     date = new Date(date.getTime() + date.getTimezoneOffset() * 60 * 1000);
-    date.setDate(date.getDate() - 1);
+    date.setDate(date.getDate() + 1);
     return date;
   }
   
@@ -107,9 +107,9 @@ const AnesthesiologistList = () => {
               <li key={index}>
                 {anesthesiologist}: {anesVacations.map((vacation, vIndex) => 
                   <div key={vIndex}>
-                    {formatDate(new Date(vacation.startDate)) === formatDate(decrementDateByOneDay(new Date(vacation.endDate))) 
+                    {formatDate(new Date(vacation.startDate)) === formatDate(new Date(vacation.endDate)) 
                       ? `${formatDate(new Date(vacation.startDate))}`
-                      : `${formatDate(new Date(vacation.startDate))} - ${formatDate(decrementDateByOneDay(new Date(vacation.endDate)))}`
+                      : `${formatDate(new Date(vacation.startDate))} - ${formatDate(new Date(vacation.endDate))}`
                     }
                     {editingVacation.anesthesiologist === anesthesiologist && editingVacation.index === vIndex ? (
                       <EditVacationForm 
