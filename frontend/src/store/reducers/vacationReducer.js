@@ -1,3 +1,5 @@
+import { CLEAR_VACATION_DATA } from '../../actions/types';
+
 export const vacationReducer = (state = [], action) => {
   switch (action.type) {
     case 'FETCH_VACATIONS':
@@ -14,6 +16,8 @@ export const vacationReducer = (state = [], action) => {
       );
     case 'DELETE_VACATION':
       return state.filter((_, index) => index !== action.index);
+    case CLEAR_VACATION_DATA:
+      return state.filter(item => new Date(item.date).getMonth() + 1 !== action.payload);
     default:
       return state;
   }

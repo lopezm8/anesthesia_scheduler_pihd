@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { FETCH_ANESTHESIOLOGISTS, ADD_ANESTHESIOLOGIST, SET_SCHEDULES, FETCH_SCHEDULES, SET_FIRST_CALL, SET_SELECTED_DATE, EDIT_VACATION, DELETE_VACATION } from './types';
+import { CLEAR_ANESTHESIOLOGIST_DATA, CLEAR_VACATION_DATA, CLEAR_FIRST_CALL_DATA } from './types';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -15,6 +16,17 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
   const anesthesiologists = getState().anesthesiologist;
   const vacations = getState().vacations;
+
+  // If the list of anesthesiologists is empty, dispatch an empty schedule
+  if (!anesthesiologists || anesthesiologists.length === 0) {
+    console.log("No anesthesiologists available. Dispatching an empty schedule.");
+    dispatch({ type: 'SET_SCHEDULES', payload: [] });
+
+    const emptyCounts = emptyCallCounts(anesthesiologists);
+    dispatch({ type: 'SET_CALL_COUNTS', payload: emptyCounts });
+    
+    return;
+  }
 
   let firstCallAssignments = getState().schedule.firstCallAssignments;
 
@@ -639,3 +651,22 @@ export const deleteFirstCall = (index) => {
     index
   }
 };
+
+export const clearMonthData = (month) => {
+  console.log('Clear month data action dispatched with month:', month);
+  return (dispatch) => {
+    dispatch({ type: CLEAR_ANESTHESIOLOGIST_DATA, payload: month });
+    dispatch({ type: CLEAR_VACATION_DATA, payload: month });
+    dispatch({ type: CLEAR_FIRST_CALL_DATA, payload: month });
+  };
+};
+
+function emptyCallCounts(anesthesiologists) {
+  let callCounts = {};
+
+  anesthesiologists.forEach((anesthesiologist) => {
+    callCounts[anesthesiologist] = { first: 0, second: 0, remaining: 0, secondToLast: 0, last: 0 };
+  });
+
+  return callCounts;
+}

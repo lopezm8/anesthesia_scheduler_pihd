@@ -1,3 +1,5 @@
+import { CLEAR_ANESTHESIOLOGIST_DATA } from '../../actions/types';
+
 export const anesthesiologistReducer = (state = [], action) => {
   switch (action.type) {
     case 'FETCH_ANESTHESIOLOGISTS':
@@ -10,6 +12,9 @@ export const anesthesiologistReducer = (state = [], action) => {
       );
     case 'DELETE_ANESTHESIOLOGIST':
       return state.filter((_, index) => index !== action.index);
+    case CLEAR_ANESTHESIOLOGIST_DATA:
+      console.log('Clearing anesthesiologist data.');
+      return [];
     default:
       return state;
   }
