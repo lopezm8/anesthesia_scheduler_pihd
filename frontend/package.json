@@ -22,7 +22,12 @@
     "react-router-dom": "^6.11.2",
     "redux": "^4.2.1",
     "redux-thunk": "^2.4.2",
-    "react-scripts": "^5.0.1"
+    "react-scripts": "^5.0.1",
+    "@fortawesome/fontawesome-svg-core": "^6.4.0",
+    "@fortawesome/free-regular-svg-icons": "^6.4.0",
+    "@fortawesome/free-solid-svg-icons": "^6.4.0",
+    "@fortawesome/react-fontawesome": "^0.2.0",
+    "lodash": "^4.17.21"
   },
   "browserslist": {
     "production": [
