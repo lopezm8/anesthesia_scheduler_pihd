@@ -11,10 +11,7 @@
   "author": "Mario Lopez",
   "license": "ISC",
   "dependencies": {
-    "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/react": "^14.0.0",
     "axios": "^1.4.0",
-    "moment": "^2.29.4",
     "react": "^18.2.0",
     "react-big-calendar": "^1.8.0",
     "react-dom": "^18.2.0",
@@ -25,7 +22,6 @@
     "react-scripts": "^5.0.1",
     "@fortawesome/fontawesome-svg-core": "^6.4.0",
     "@fortawesome/free-regular-svg-icons": "^6.4.0",
-    "@fortawesome/free-solid-svg-icons": "^6.4.0",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "lodash": "^4.17.21"
   },

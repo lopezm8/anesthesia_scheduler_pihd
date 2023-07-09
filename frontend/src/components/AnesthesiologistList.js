@@ -7,10 +7,9 @@ import EditFirstCallForm from './EditFirstCallForm';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { far } from '@fortawesome/free-regular-svg-icons';
-import { fas } from '@fortawesome/free-solid-svg-icons';
 import './ScheduleCalendar.css';
 
-library.add(fas, far);
+library.add(far);
 
 const AnesthesiologistList = () => {
   const [editingIndex, setEditingIndex] = useState(null);
