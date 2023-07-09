@@ -1,3 +1,37 @@
+.title-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.inner-container {
+    display: flex;
+    align-items: center;
+}
+
+.website-icon {
+    width: 15%;
+    max-width: 185px;
+    margin-right: 5%;
+}
+
+.title-description {
+    width: 75%;
+    margin-right: 35px;
+}
+
+.title-description h1 {
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.title-description p {
+    font-size: 1em;
+    text-align: center;
+}
+
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -14,4 +48,11 @@
     align-items: center;
     gap: 10px;
     margin-bottom: 10px;
+}
+
+.calendar-container {
+    display: flex;
+    justify-content: center;
+    max-width: 80%;
+    margin: 0 auto; 
 }

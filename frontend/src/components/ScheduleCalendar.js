@@ -54,7 +54,7 @@ const ScheduleCalendar = ({ events, selectedDate }) => {
         key={currentDate}
         localizer={localizer}
         events={events}
-        style={{ height: "125vh" }}
+        style={{ height: "150vh" }}
         date={currentDate}
         onNavigate={handleNavigate}
         popupOffset={{y: 10000}}
