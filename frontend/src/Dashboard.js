@@ -21,7 +21,7 @@ const Dashboard = ({selectedDate, setSelectedDate}) => {
                 <div className="inner-container">
                     <img src={abc_prop} alt="Website Icon" className="website-icon"/>
                     <div className="title-description">
-                        <h1>PropofolOnDemand: Anesthesia Scheduler</h1>
+                        <h1>PropOnDemand: Anesthesia Scheduler</h1>
                         <p>
                             A Roc'n tool for generating balanced random on-call scheduling for anesthesiologists <br></br>
                             Please add anesthesiologists first before assigning vacations or first calls. <br></br>
