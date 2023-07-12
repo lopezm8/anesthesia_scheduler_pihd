@@ -393,66 +393,110 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   firstCallAssignments = getState().schedule.firstCallAssignments;
   console.log("This is the first call assignments going into balance calls ", firstCallAssignments);
   balanceCalls(schedules, callCounts, firstCallAssignments);
+  console.log("This is the schedule after balancing ", schedules);
   callCounts = tallyCalls(schedules);
 
-for (let i = 0; i < schedules.length; i++) {
-  const currentSchedule = schedules[i];
-  const currentDate = new Date(currentSchedule.on_call_date);
-  const dayOfWeek = currentDate.getUTCDay();
+  for (let i = 0; i < schedules.length; i++) {
+    const currentSchedule = schedules[i];
+    const currentDate = new Date(currentSchedule.on_call_date);
+    const dayOfWeek = currentDate.getUTCDay();
 
-  if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-    const previousDay = new Date(currentDate.getTime() - ONE_DAY_IN_MS);
-    const previousDayStr = previousDay.toISOString().split('T')[0];
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      const previousDay = new Date(currentDate.getTime() - ONE_DAY_IN_MS);
+      const previousDayStr = previousDay.toISOString().split('T')[0];
 
-    const previousFirstCall = schedules.find(schedule =>
-      schedule.on_call_date === previousDayStr &&
-      schedule.call_type === 'first' &&
-      schedule.anesthesiologist === currentSchedule.anesthesiologist
-    );
-
-    if (previousFirstCall) {
-      schedules.splice(i, 1);
-      i--;
-    }
-  }
-}
-
-for (let i = 0; i < schedules.length; i++) {
-  const currentSchedule = schedules[i];
-  const currentDate = new Date(currentSchedule.on_call_date);
-  const dayOfWeek = currentDate.getUTCDay();
-
-  if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-    // get currently scheduled anesthesiologists
-    const scheduledAnesthesiologists = schedules
-      .filter(schedule => schedule.on_call_date === currentSchedule.on_call_date)
-      .map(schedule => schedule.anesthesiologist);
-    
-    // filter out anesthesiologists on vacation or first call the day prior
-    const eligibleAnesthesiologists = [...anesthesiologists]
-      .filter(anesthesiologist =>
-        !vacations.some(vacation =>
-          vacation.anesthesiologist === anesthesiologist &&
-          new Date(vacation.startDate) <= currentDate &&
-          new Date(vacation.endDate) >= currentDate
-        ) &&
-        !schedules.some(schedule =>
-          schedule.anesthesiologist === anesthesiologist &&
-          new Date(schedule.on_call_date).getTime() === new Date(currentDate.getTime() - ONE_DAY_IN_MS).getTime() &&
-          schedule.call_type === 'first'
-        )
+      const previousFirstCall = schedules.find(schedule =>
+        schedule.on_call_date === previousDayStr &&
+        schedule.call_type === 'first' &&
+        schedule.anesthesiologist === currentSchedule.anesthesiologist
       );
-      
-    for (let anesthesiologist of eligibleAnesthesiologists) {
-      if (!scheduledAnesthesiologists.includes(anesthesiologist)) {
-        schedules.push({
-          anesthesiologist: anesthesiologist,
-          on_call_date: currentDate.toISOString().split('T')[0],
-          call_type: 'third',
-        });
+
+      if (previousFirstCall) {
+        schedules.splice(i, 1);
+        i--;
       }
     }
   }
+
+  for (let i = 0; i < schedules.length; i++) {
+    const currentSchedule = schedules[i];
+    const currentDate = new Date(currentSchedule.on_call_date);
+    const dayOfWeek = currentDate.getUTCDay();
+
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      // get currently scheduled anesthesiologists
+      const scheduledAnesthesiologists = schedules
+        .filter(schedule => schedule.on_call_date === currentSchedule.on_call_date)
+        .map(schedule => schedule.anesthesiologist);
+      
+      // filter out anesthesiologists on vacation or first call the day prior
+      const eligibleAnesthesiologists = [...anesthesiologists]
+      .filter(anesthesiologist =>
+        !vacations.some(vacation => {
+          const vacationStartDate = new Date(vacation.startDate);
+          const vacationEndDate = new Date(vacation.endDate);
+          return vacation.anesthesiologist === anesthesiologist &&
+            (
+              vacationStartDate.getUTCFullYear() < currentDate.getUTCFullYear() ||
+              (vacationStartDate.getUTCFullYear() === currentDate.getUTCFullYear() && vacationStartDate.getUTCMonth() < currentDate.getUTCMonth()) ||
+              (vacationStartDate.getUTCFullYear() === currentDate.getUTCFullYear() && vacationStartDate.getUTCMonth() === currentDate.getUTCMonth() && vacationStartDate.getUTCDate() <= currentDate.getUTCDate())
+            ) &&
+            (
+              vacationEndDate.getUTCFullYear() > currentDate.getUTCFullYear() ||
+              (vacationEndDate.getUTCFullYear() === currentDate.getUTCFullYear() && vacationEndDate.getUTCMonth() > currentDate.getUTCMonth()) ||
+              (vacationEndDate.getUTCFullYear() === currentDate.getUTCFullYear() && vacationEndDate.getUTCMonth() === currentDate.getUTCMonth() && vacationEndDate.getUTCDate() >= currentDate.getUTCDate())
+            );
+        }) && 
+          !schedules.some(schedule =>
+            schedule.anesthesiologist === anesthesiologist &&
+            new Date(schedule.on_call_date).getTime() === new Date(currentDate.getTime() - ONE_DAY_IN_MS).getTime() &&
+            schedule.call_type === 'first'
+          )
+        );
+        
+      for (let anesthesiologist of eligibleAnesthesiologists) {
+        if (!scheduledAnesthesiologists.includes(anesthesiologist)) {
+          const isOnVacation = vacations.some(vacation =>
+            vacation.anesthesiologist === anesthesiologist &&
+            new Date(vacation.startDate) <= currentDate &&
+            new Date(vacation.endDate) >= currentDate
+          );
+          if (!isOnVacation) {
+            schedules.push({
+              anesthesiologist: anesthesiologist,
+              on_call_date: currentDate.toISOString().split('T')[0],
+              call_type: 'third',
+            });
+          }
+        }
+      }
+    }
+  }
+
+  for (let i = 0; i < schedules.length; i++) {
+    const currentSchedule = schedules[i];
+    const currentDate = new Date(currentSchedule.on_call_date);
+
+    const isOnVacation = vacations.some(vacation => {
+      const vacationStartDate = new Date(vacation.startDate);
+      const vacationEndDate = new Date(vacation.endDate);
+      return vacation.anesthesiologist === currentSchedule.anesthesiologist &&
+        (
+          vacationStartDate.getUTCFullYear() < currentDate.getUTCFullYear() ||
+          (vacationStartDate.getUTCFullYear() === currentDate.getUTCFullYear() && vacationStartDate.getUTCMonth() < currentDate.getUTCMonth()) ||
+          (vacationStartDate.getUTCFullYear() === currentDate.getUTCFullYear() && vacationStartDate.getUTCMonth() === currentDate.getUTCMonth() && vacationStartDate.getUTCDate() <= currentDate.getUTCDate())
+        ) &&
+        (
+          vacationEndDate.getUTCFullYear() > currentDate.getUTCFullYear() ||
+          (vacationEndDate.getUTCFullYear() === currentDate.getUTCFullYear() && vacationEndDate.getUTCMonth() > currentDate.getUTCMonth()) ||
+          (vacationEndDate.getUTCFullYear() === currentDate.getUTCFullYear() && vacationEndDate.getUTCMonth() === currentDate.getUTCMonth() && vacationEndDate.getUTCDate() >= currentDate.getUTCDate())
+        );
+    });
+
+    if (isOnVacation) {
+      schedules.splice(i, 1);
+      i--;
+    }
 }
 
 // Update call counts after processing day-off after 'first' calls
@@ -464,6 +508,7 @@ dispatch({
 });
 dispatch({ type: 'SET_SCHEDULES', payload: schedules });
 };
+
 
 export const fetchSchedules = () => async (dispatch) => {
   dispatch({ type: FETCH_SCHEDULES });
