@@ -667,20 +667,23 @@ export const deleteAnesthesiologist = index => ({
   index,
 });
 
-export const editVacation = (index, newVacation) => dispatch => {
-  dispatch({
-    type: EDIT_VACATION,
+export const editVacation = (index, anesthesiologist, startDate, endDate) => {
+  return {
+    type: 'EDIT_VACATION',
     index,
-    newVacation,
-  });
+    anesthesiologist,
+    startDate,
+    endDate
+  };
 };
 
-export const deleteVacation = index => dispatch => {
-  dispatch({
-    type: DELETE_VACATION,
-    index,
-  });
+export const deleteVacation = index => {
+  return {
+    type: 'DELETE_VACATION',
+    index
+  };
 };
+
 
 export const editFirstCall = (index, updatedAssignment) => {
   return {

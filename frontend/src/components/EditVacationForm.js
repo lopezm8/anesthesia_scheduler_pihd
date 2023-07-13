@@ -11,14 +11,11 @@ const EditVacationForm = ({ index, vacation, setEditing }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    dispatch(editVacation(index, {
-      anesthesiologist,
-      startDate,
-      endDate,
-    }));
+  
+    dispatch(editVacation(index, anesthesiologist, startDate, endDate));
     setEditing(false);
   };
+  
 
   return (
     <form onSubmit={handleSubmit}>

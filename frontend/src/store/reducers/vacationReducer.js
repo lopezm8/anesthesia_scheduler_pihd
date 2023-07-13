@@ -11,11 +11,20 @@ export const vacationReducer = (state = [], action) => {
         endDate: action.endDate
       }];
     case 'EDIT_VACATION':
-      return state.map((vacation, index) => 
-        index === action.index ? action.newVacation : vacation
-      );
+      return state.map((vacation, index) => {
+        if (index !== action.index) {
+          return vacation;
+        }
+    
+        return {
+          ...vacation,
+          anesthesiologist: action.anesthesiologist,
+          startDate: action.startDate,
+          endDate: action.endDate
+        };
+      });
     case 'DELETE_VACATION':
-      return state.filter((_, index) => index !== action.index);
+      return state.filter((vacation, index) => index !== action.index);
     case CLEAR_VACATION_DATA:
       return state.filter(item => new Date(item.date).getMonth() + 1 !== action.payload);
     default:

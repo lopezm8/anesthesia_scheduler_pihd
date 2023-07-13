@@ -16,6 +16,7 @@ const AnesthesiologistList = () => {
   const dispatch = useDispatch();
   const anesthesiologists = useSelector(state => state.anesthesiologist) || [];
   const vacations = useSelector(state => state.vacations) || [];
+  console.log("vacations in AnesthesiologistList.js: ", vacations);
   const callCounts = useSelector(state => state.schedule.callCounts) || {};
   const firstCalls = useSelector(state => state.schedule.firstCallAssignments) || [];
 
@@ -27,16 +28,15 @@ const AnesthesiologistList = () => {
     dispatch(editAnesthesiologist(index, newAnesthesiologist));
   };
 
-  const [editingVacation, setEditingVacation] = useState({ anesthesiologist: null, index: null });
-
-  const handleEditVacation = (index, anesthesiologist) => {
-    setEditingVacation({ anesthesiologist, index });
+  const handleEditVacation = (index, newVacation) => {
+    dispatch(editVacation(index, newVacation));
   };
   
-
   const handleDeleteVacation = index => {
     dispatch(deleteVacation(index));
   };
+  
+  const [editingVacationIndex, setEditingVacationIndex] = useState(null);
 
   const [editingFirstCall, setEditingFirstCall] = useState({ anesthesiologistId: null, index: null });
 
@@ -96,39 +96,30 @@ const AnesthesiologistList = () => {
         </ul>
       </div>
       <div className="vacations-box">
-        <h2>Vacations</h2>
-        <ul>
-          {anesthesiologists.map((anesthesiologist, index) => {
-            let anesVacations = vacations.filter(vacation => vacation.anesthesiologist === anesthesiologist);
-            anesVacations = anesVacations.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-            
-            return anesVacations.length > 0 && (
-              <li key={index}>
-                {anesthesiologist}: {anesVacations.map((vacation, vIndex) => 
-                  <div key={vIndex}>
-                    {formatDate(new Date(vacation.startDate)) === formatDate(new Date(vacation.endDate)) 
-                      ? `${formatDate(new Date(vacation.startDate))}`
-                      : `${formatDate(new Date(vacation.startDate))} - ${formatDate(new Date(vacation.endDate))}`
-                    }
-                    {editingVacation.anesthesiologist === anesthesiologist && editingVacation.index === vIndex ? (
-                      <EditVacationForm 
-                        index={vIndex}
-                        vacation={vacation}
-                        setEditing={() => setEditingVacation({ anesthesiologist: null, index: null })}
-                      />
-                    ) : (
-                      <>
-                        <FontAwesomeIcon icon={['far', 'pen-to-square']} onClick={() => handleEditVacation(vIndex, anesthesiologist)} className="icon-button-edit" />
-                        <FontAwesomeIcon icon={['far', 'trash-can']} onClick={() => handleDeleteVacation(vIndex)} className="icon-button" />
-                      </>
-                    )}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+      <h2>Vacations</h2>
+      <ul>
+        {vacations.map((vacation, index) => (
+          <li key={index}>
+            {editingVacationIndex === index ? (
+              <EditVacationForm
+                index={index}
+                vacation={vacation}
+                handleEdit={handleEditVacation}
+                setEditing={() => setEditingVacationIndex(null)}
+              />
+            ) : (
+              <>
+                {vacation.anesthesiologist} - 
+                Start Date: {formatDate(new Date(vacation.startDate))},
+                End Date: {formatDate(new Date(vacation.endDate))}
+                <FontAwesomeIcon icon={['far', 'pen-to-square']} onClick={() => setEditingVacationIndex(index)} className="icon-button-edit"/>
+                <FontAwesomeIcon icon={['far', 'trash-can']} onClick={() => handleDeleteVacation(index)} className="icon-button" />
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
       <div className="first-calls-box">
         <h2>First Calls</h2>
         <ul>

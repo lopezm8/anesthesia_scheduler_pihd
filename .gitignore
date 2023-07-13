@@ -3,3 +3,4 @@ original_index.js
 __pycache__
 .DS_Store
 .env
+package-lock.json
