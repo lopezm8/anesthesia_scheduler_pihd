@@ -1,7 +1,8 @@
 import { 
   SET_SCHEDULES, 
   FETCH_SCHEDULES,
-  SET_FIRST_CALL
+  SET_FIRST_CALL,
+  CLEAR_FIRST_CALL_DATA
 } from '../../actions/types';
 
 
@@ -58,7 +59,8 @@ export const scheduleReducer = (state = initialState, action) => {
         ...state,
         firstCallAssignments: state.firstCallAssignments.filter((_, index) => index !== action.index)
       };
-    
+    case CLEAR_FIRST_CALL_DATA:
+        return [];
     default:
       return state;
   }

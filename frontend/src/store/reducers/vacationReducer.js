@@ -26,7 +26,7 @@ export const vacationReducer = (state = [], action) => {
     case 'DELETE_VACATION':
       return state.filter((vacation, index) => index !== action.index);
     case CLEAR_VACATION_DATA:
-      return state.filter(item => new Date(item.date).getMonth() + 1 !== action.payload);
+      return [];
     default:
       return state;
   }
