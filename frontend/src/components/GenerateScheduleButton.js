@@ -13,7 +13,7 @@ const GenerateScheduleButton = ({ selectedDate, firstCallAssignment }) => {
   };
 
   return (
-    <button onClick={handleClick}>Generate Schedule</button>
+    <button className="button-list" onClick={handleClick}>Generate Schedule</button>
   );
 };
 

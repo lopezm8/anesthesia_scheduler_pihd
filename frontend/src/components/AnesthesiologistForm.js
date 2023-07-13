@@ -24,8 +24,8 @@ function AnesthesiologistForm({selectedDate}) {
           dispatch(addAnesthesiologist(anesthesiologist));
           setAnesthesiologist('');
         }}>
-          <input value={anesthesiologist} onChange={e => setAnesthesiologist(e.target.value)} placeholder="Anesthesiologist" />
-          <button type="submit">Add</button>
+          <input className="add-form" value={anesthesiologist} onChange={e => setAnesthesiologist(e.target.value)} placeholder="Anesthesiologist" />
+          <button className="button-add" type="submit">Add Anesthesiologist</button>
         </form>
       </div>
 
@@ -38,10 +38,11 @@ function AnesthesiologistForm({selectedDate}) {
           setVacationStart(getFirstDayOfMonth(selectedDate));
           setVacationEnd(getLastDayOfMonth(selectedDate));
         }}>
-          <input value={anesthesiologist} onChange={e => setAnesthesiologist(e.target.value)} placeholder="Anesthesiologist" />
-          <input type="date" value={vacationStart} onChange={e => setVacationStart(e.target.value)} placeholder="Start date" />
+          <input className="add-form" value={anesthesiologist} onChange={e => setAnesthesiologist(e.target.value)} placeholder="Anesthesiologist" />
+          <button className="button-add" type="submit">Add Vacation</button>
+          <input className="calendar-one" type="date" value={vacationStart} onChange={e => setVacationStart(e.target.value)} placeholder="Start date" />
           <input type="date" value={vacationEnd} onChange={e => setVacationEnd(e.target.value)} placeholder="End date" />
-          <button type="submit">Add Vacation</button>
+          
         </form>
       </div>
 
@@ -57,9 +58,10 @@ function AnesthesiologistForm({selectedDate}) {
               alert('Please fill both the Anesthesiologist and Date fields');
             }
           }}>
-          <input value={anesthesiologist} onChange={e => setAnesthesiologist(e.target.value)} placeholder="Anesthesiologist" />
+          <input className="add-form" value={anesthesiologist} onChange={e => setAnesthesiologist(e.target.value)} placeholder="Anesthesiologist" />
+          <button className="button-add" type="submit">Add First Call</button>
           <input type="date" value={firstCallDate} onChange={e => setFirstCallDate(e.target.value)} placeholder="Date" />
-          <button type="submit">Add First Call</button>
+          
         </form>
       </div>
     </div>

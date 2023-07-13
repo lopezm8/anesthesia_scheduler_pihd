@@ -37,12 +37,12 @@ const Dashboard = ({selectedDate, setSelectedDate}) => {
                 <AnesthesiologistList />
                 <div className="center-container">
                     <div className="generate-schedule">
-                        <button onClick={handleClearMonth}>Clear Month</button>
+                        <button className="button-list" onClick={handleClearMonth}>Clear Month</button>
                         <div className="calendar-container">
                             <DateSelector selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                         </div>
                         <GenerateScheduleButton selectedDate={selectedDate} />  
-                        <button onClick={printDocument}>Save as PDF</button>
+                        <button className="button-list" onClick={printDocument}>Save as PDF</button>
                     </div>
                 </div>
             </div>

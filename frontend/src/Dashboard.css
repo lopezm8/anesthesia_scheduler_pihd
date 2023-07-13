@@ -56,3 +56,67 @@
     max-width: 80%;
     margin: 0 auto; 
 }
+
+.button-list {
+  background-color: #f6f6f7;
+  border: 1px solid #222222;
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  display: inline-block;
+  line-height: 20px;
+  margin: 0;
+  outline: none;
+  padding: 0px 10px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  touch-action: manipulation;
+  transition: box-shadow .2s,-ms-transform .1s,-webkit-transform .1s,transform .1s;
+  user-select: none;
+  -webkit-user-select: none;
+  width: auto;
+}
+
+.button-list:active {
+  background-color: #F7F7F7;
+  border-color: #000000;
+  transform: scale(.96);
+}
+
+.button-add {
+    background-color: #f6f6f7;
+    border: 1px solid #222222;
+    border-radius: 8px;
+    box-sizing: border-box;
+    color: rgb(0, 0, 0);
+    cursor: pointer;
+    display: inline-block;
+    line-height: 20px;
+    /* margin: 0 0 0 10px; */
+    outline: none;
+    padding: 0px 10px;
+    position: relative;
+    text-align: center;
+    text-decoration: none;
+    touch-action: manipulation;
+    transition: box-shadow .2s,-ms-transform .1s,-webkit-transform .1s,transform .1s;
+    user-select: none;
+    -webkit-user-select: none;
+    width: auto;
+  }
+  
+  .button-add {
+    background-color: #F7F7F7;
+    border-color: #000000;
+    transform: scale(.96);
+  }
+
+  .add-form {
+    margin: 0 5px 5px 0;
+  }
+
+  .calendar-one {
+    margin: 0 5px 0 0;
+  }
