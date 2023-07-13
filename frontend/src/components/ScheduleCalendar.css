@@ -39,3 +39,9 @@
   margin-left: 10px;
   margin-right: 5px;
 }
+
+@media print {
+  .add-anesthesiologist-box, .add-vacation-box, .add-first-call-box {
+    display: none;
+  }
+}

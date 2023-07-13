@@ -5,7 +5,8 @@ import globalize from 'globalize';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { groupBy } from 'lodash';
 import './ScheduleCalendar.css'; 
-
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 const localizer = globalizeLocalizer(globalize);
 
 function countCalls(events) {
@@ -28,12 +29,52 @@ function countCalls(events) {
   return callCounts;
 }
 
+export const printDocument = () => {
+  window.scrollTo(0, 0);
+
+  const input = document.getElementById('root');
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'px',
+    format: [input.offsetHeight, input.offsetWidth]
+  });
+
+  html2canvas(input, {
+    allowTaint: true,
+    useCORS: true,
+    scrollY: -window.scrollY
+  })
+  .then(canvas => {
+    const imgData = canvas.toDataURL('image/png');
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    let pdfPageHeight = pdf.internal.pageSize.getHeight();
+    let yImagePosition = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, yImagePosition, pdfWidth, pdfHeight);
+    yImagePosition += pdfPageHeight;
+
+    // add extra pages if the content is overflowing
+    while (yImagePosition < pdfHeight) {
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, yImagePosition * -1, pdfWidth, pdfHeight);
+      yImagePosition += pdfPageHeight;
+    }
+
+    pdf.save("download.pdf");
+  })
+  .catch(err => console.error("Something went wrong: ", err));
+};
+
 const ScheduleCalendar = ({ events, selectedDate }) => {
   const [currentDate, setCurrentDate] = React.useState(() => {
     const date = new Date(selectedDate);
     date.setDate(date.getDate() + 1);
     return date;
   });
+  
 
   useEffect(() => {
     const date = new Date(selectedDate);
@@ -49,7 +90,7 @@ const ScheduleCalendar = ({ events, selectedDate }) => {
   console.log('Rendered ScheduleCalendar with props:', { events, selectedDate });
   console.log('Calendar component events', events);
   return (
-    <div>
+    <div id="divToPrint">
       <Calendar
         key={currentDate}
         localizer={localizer}

@@ -7,6 +7,7 @@ import DateSelector from './components/DateSelector';
 import { useDispatch } from 'react-redux';
 import { clearMonthData, generateRandomSchedule } from './actions';
 import abc_prop from './assets/abc_prop.jpg';
+import { printDocument } from './components/ScheduleCalendar';
 
 const Dashboard = ({selectedDate, setSelectedDate}) => {
     const dispatch = useDispatch();
@@ -36,11 +37,12 @@ const Dashboard = ({selectedDate, setSelectedDate}) => {
                 <AnesthesiologistList />
                 <div className="center-container">
                     <div className="generate-schedule">
+                        <button onClick={handleClearMonth}>Clear Month</button>
                         <div className="calendar-container">
                             <DateSelector selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                         </div>
                         <GenerateScheduleButton selectedDate={selectedDate} />  
-                        <button onClick={handleClearMonth}>Clear Month</button>     
+                        <button onClick={printDocument}>Save as PDF</button>
                     </div>
                 </div>
             </div>
