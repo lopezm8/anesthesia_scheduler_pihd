@@ -19,6 +19,7 @@ const AnesthesiologistList = () => {
   console.log("vacations in AnesthesiologistList.js: ", vacations);
   const callCounts = useSelector(state => state.schedule.callCounts) || {};
   const firstCalls = useSelector(state => state.schedule.firstCallAssignments) || [];
+  console.log("firstCalls in AnesthesiologistList.js: ", firstCalls);
 
   const handleDelete = index => {
     dispatch(deleteAnesthesiologist(index));
@@ -48,7 +49,7 @@ const AnesthesiologistList = () => {
     const actualIndex = firstCalls.findIndex(call => call.anesthesiologistId === anesthesiologistId && call.date === firstCalls[index].date);
     dispatch(deleteFirstCall(actualIndex));
   };
-  
+
   const handleFirstCallEdit = (index, updatedCall) => {
     const actualIndex = firstCalls.findIndex(call => call.anesthesiologistId === updatedCall.anesthesiologistId && call.date === firstCalls[index].date);
     dispatch(editFirstCall(actualIndex, updatedCall));
@@ -84,9 +85,9 @@ const AnesthesiologistList = () => {
                 />
               ) : (
                 <>
-                  {anesthesiologist} - 
-                  First Calls: {callCounts[anesthesiologist]?.first || 0}, 
-                  Second Calls: {callCounts[anesthesiologist]?.second || 0}
+                  {anesthesiologist} -  
+                  First: {callCounts[anesthesiologist]?.first || 0}, 
+                  Second: {callCounts[anesthesiologist]?.second || 0}
                   <FontAwesomeIcon icon={['far', 'pen-to-square']} onClick={() => setEditingIndex(index)} className="icon-button-edit"/>
                   <FontAwesomeIcon icon={['far', 'trash-can']} onClick={() => handleDelete(index)} className="icon-button" />
                 </>
@@ -98,59 +99,54 @@ const AnesthesiologistList = () => {
       <div className="vacations-box">
       <h2>Vacations</h2>
       <ul>
-        {vacations.map((vacation, index) => (
+        {vacations
+            .sort((a, b) => a.anesthesiologist.localeCompare(b.anesthesiologist))
+            .map((vacation, index) => (
+            <li key={index}>
+              {editingVacationIndex === index ? (
+                <EditVacationForm
+                  index={index}
+                  vacation={vacation}
+                  handleEdit={handleEditVacation}
+                  setEditing={() => setEditingVacationIndex(null)}
+                />
+              ) : (
+                <>
+                  {vacation.anesthesiologist} - {formatDate(new Date(vacation.startDate))} - {formatDate(new Date(vacation.endDate))}
+                  <FontAwesomeIcon icon={['far', 'pen-to-square']} onClick={() => setEditingVacationIndex(index)} className="icon-button-edit"/>
+                  <FontAwesomeIcon icon={['far', 'trash-can']} onClick={() => handleDeleteVacation(index)} className="icon-button" />
+                </>
+              )}
+            </li>
+          ))}
+      </ul>
+    </div>
+    <div className="first-calls-box">
+      <h2>First Calls</h2>
+      <ul>
+        {firstCalls
+        .sort((a, b) => a.anesthesiologistId.localeCompare(b.anesthesiologistId))
+        .map((call, index) => (
           <li key={index}>
-            {editingVacationIndex === index ? (
-              <EditVacationForm
+            {editingFirstCall.anesthesiologistId === call.anesthesiologistId && editingFirstCall.index === index ? (
+              <EditFirstCallForm
                 index={index}
-                vacation={vacation}
-                handleEdit={handleEditVacation}
-                setEditing={() => setEditingVacationIndex(null)}
+                call={call}
+                handleEdit={handleFirstCallEdit}
+                setEditing={() => setEditingFirstCall({ anesthesiologistId: null, index: null })}
               />
             ) : (
               <>
-                {vacation.anesthesiologist} - 
-                Start Date: {formatDate(new Date(vacation.startDate))},
-                End Date: {formatDate(new Date(vacation.endDate))}
-                <FontAwesomeIcon icon={['far', 'pen-to-square']} onClick={() => setEditingVacationIndex(index)} className="icon-button-edit"/>
-                <FontAwesomeIcon icon={['far', 'trash-can']} onClick={() => handleDeleteVacation(index)} className="icon-button" />
+                {call.anesthesiologistId} - {formatDate(new Date(call.date))}
+                <FontAwesomeIcon icon={['far', 'pen-to-square']} onClick={() => handleEditFirstCall(index, call.anesthesiologistId)} className="icon-button-edit"/>
+                <FontAwesomeIcon icon={['far', 'trash-can']} onClick={() => handleDeleteFirstCall(index, call.anesthesiologistId)} className="icon-button" />
               </>
             )}
           </li>
         ))}
       </ul>
     </div>
-      <div className="first-calls-box">
-        <h2>First Calls</h2>
-        <ul>
-          {anesthesiologists.map((anesthesiologist, index) => {
-            const anesFirstCalls = firstCalls.filter(call => call.anesthesiologistId === anesthesiologist);
-            
-            return anesFirstCalls.length > 0 && (
-              <li key={index}>
-                {anesthesiologist}: {anesFirstCalls.map((call, cIndex) => 
-                  <div key={cIndex}>
-                    {formatDate(new Date(call.date))}
-                    {editingFirstCall.anesthesiologistId === anesthesiologist && editingFirstCall.index === cIndex ? (
-                      <EditFirstCallForm
-                        index={cIndex}
-                        call={call}
-                        handleEdit={handleFirstCallEdit}
-                        setEditing={() => setEditingFirstCall({ anesthesiologist: null, index: null })}
-                      />
-                    ) : (
-                      <>
-                        <FontAwesomeIcon icon={['far', 'pen-to-square']} onClick={() => handleEditFirstCall(cIndex, anesthesiologist)} className="icon-button-edit" />
-                        <FontAwesomeIcon icon={['far', 'trash-can']} onClick={() => handleDeleteFirstCall(cIndex, anesthesiologist)} className="icon-button" />
-                      </>
-                    )}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+
     </div>
   );
 };
