@@ -30,13 +30,13 @@ function AnesthesiologistForm({selectedDate}) {
       </div>
 
       <div className="add-vacation-box">
-        <h2>Add Vacation</h2>
+      <h2>Add Vacation</h2>
         <form onSubmit={(e) => {
           e.preventDefault();
           dispatch(addVacation(anesthesiologist, parseDate(vacationStart), parseDate(vacationEnd)));
           setAnesthesiologist('');
-          setVacationStart('');
-          setVacationEnd('');
+          setVacationStart(getFirstDayOfMonth(selectedDate));
+          setVacationEnd(getLastDayOfMonth(selectedDate));
         }}>
           <input value={anesthesiologist} onChange={e => setAnesthesiologist(e.target.value)} placeholder="Anesthesiologist" />
           <input type="date" value={vacationStart} onChange={e => setVacationStart(e.target.value)} placeholder="Start date" />
@@ -47,16 +47,16 @@ function AnesthesiologistForm({selectedDate}) {
 
       <div className="add-first-call-box">
         <h2>Add First Call</h2>
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          if(anesthesiologist && firstCallDate) {
-            dispatch(setFirstCall(anesthesiologist, firstCallDate));
-            setAnesthesiologist('');
-            setFirstCallDate('');
-          } else {
-            alert('Please fill both the Anesthesiologist and Date fields');
-          }
-        }}>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if(anesthesiologist && firstCallDate) {
+              dispatch(setFirstCall(anesthesiologist, firstCallDate));
+              setAnesthesiologist('');
+              setFirstCallDate(getFirstDayOfMonth(selectedDate));
+            } else {
+              alert('Please fill both the Anesthesiologist and Date fields');
+            }
+          }}>
           <input value={anesthesiologist} onChange={e => setAnesthesiologist(e.target.value)} placeholder="Anesthesiologist" />
           <input type="date" value={firstCallDate} onChange={e => setFirstCallDate(e.target.value)} placeholder="Date" />
           <button type="submit">Add First Call</button>

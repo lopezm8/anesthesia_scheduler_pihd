@@ -59,8 +59,11 @@ export const scheduleReducer = (state = initialState, action) => {
         ...state,
         firstCallAssignments: state.firstCallAssignments.filter((_, index) => index !== action.index)
       };
-    case CLEAR_FIRST_CALL_DATA:
-        return [];
+    case 'CLEAR_FIRST_CALL_DATA':
+      return {
+        ...state,
+        firstCallAssignments: [],
+      };
     default:
       return state;
   }
