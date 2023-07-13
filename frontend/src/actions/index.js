@@ -255,40 +255,144 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
       }
     } else {
       if (date.getDay() === 6) {  // It's a Saturday
-          eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
-              if (lastWeekendOnCall[anesthesiologist] !== null) {
-                  const daysSinceLastWeekend = Math.round((date.getTime() - lastWeekendOnCall[anesthesiologist].getTime()) / (1000 * 60 * 60 * 24));
-                  return daysSinceLastWeekend > 7;
-              }
-              return true;
+        eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
+          if (lastWeekendOnCall[anesthesiologist] !== null) {
+            const daysSinceLastWeekend = Math.round((date.getTime() - lastWeekendOnCall[anesthesiologist].getTime()) / (1000 * 60 * 60 * 24));
+            return daysSinceLastWeekend > 14;
+          }
+          
+          const isOnVacationToday = vacations.some(vacation => {
+            return (
+              vacation.anesthesiologist === anesthesiologist &&
+              new Date(vacation.startDate) <= date &&
+              new Date(vacation.endDate) >= date
+            );
           });
+      
+          const tomorrow = new Date(date);
+          tomorrow.setDate(date.getDate() + 1);
+          const isOnVacationTomorrow = vacations.some(vacation => {
+            return (
+              vacation.anesthesiologist === anesthesiologist &&
+              new Date(vacation.startDate) <= tomorrow &&
+              new Date(vacation.endDate) >= tomorrow
+            );
+          });
+    
+          // Check if this anesthesiologist was on call last weekend
+          const lastSaturday = new Date(date);
+          lastSaturday.setDate(lastSaturday.getDate() - 7);
+          
+          const lastSunday = new Date(lastSaturday);
+          lastSunday.setDate(lastSunday.getDate() + 1);
+          
+          // Check for the previous Saturday and Sunday
+          const prevSaturday = new Date(lastSaturday);
+          prevSaturday.setDate(prevSaturday.getDate() - 7);
+
+          const prevSunday = new Date(prevSaturday);
+          prevSunday.setDate(prevSunday.getDate() + 1);
+          
+          const wasOnCallLastWeekend = schedules.some(schedule => {
+            const onCallDate = new Date(schedule.on_call_date).toISOString().split('T')[0];
+            return (
+              schedule.anesthesiologist === anesthesiologist &&
+              (
+                onCallDate === lastSaturday.toISOString().split('T')[0] || 
+                onCallDate === lastSunday.toISOString().split('T')[0] ||
+                onCallDate === prevSaturday.toISOString().split('T')[0] ||
+                onCallDate === prevSunday.toISOString().split('T')[0]
+              )
+            );
+          });
+    
+          const wasOnFirstOrSecondCallFriday = schedules.some(schedule => {
+            const friday = new Date(date);
+            friday.setDate(friday.getDate() - 1);
+            return (
+              (schedule.call_type === 'first' || schedule.call_type === 'second') &&
+              schedule.anesthesiologist === anesthesiologist &&
+              new Date(schedule.on_call_date).toISOString().split('T')[0] === friday.toISOString().split('T')[0]
+            );
+          });
+          
+          return !isOnVacationToday && !isOnVacationTomorrow && !wasOnFirstOrSecondCallFriday && !wasOnCallLastWeekend;
+          
+        });
+      
+        console.log("eligibleAnesthesiologists in weekend: ", date, eligibleAnesthesiologists);
+      
   
-          if (eligibleAnesthesiologists.length < 2) {
+          if (eligibleAnesthesiologists.length < 4) {
             eligibleAnesthesiologists = [...anesthesiologists]; 
             eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
               const isOnVacationToday = vacations.some(vacation => {
-                return vacation.anesthesiologist === anesthesiologist &&
-                    new Date(vacation.startDate) <= date &&
-                    new Date(vacation.endDate) >= date;
+                const vacationStartDate = new Date(vacation.startDate);
+                const vacationEndDate = new Date(vacation.endDate);
+                vacationEndDate.setDate(vacationEndDate.getDate() + 1); // Add one more day to the vacation end date
+                return (
+                  vacation.anesthesiologist === anesthesiologist &&
+                  vacationStartDate <= date &&
+                  vacationEndDate > date
+                );
               });
+          
               const tomorrow = new Date(date);
               tomorrow.setDate(date.getDate() + 1);
               const isOnVacationTomorrow = vacations.some(vacation => {
-                return vacation.anesthesiologist === anesthesiologist &&
-                    new Date(vacation.startDate) <= tomorrow &&
-                    new Date(vacation.endDate) >= tomorrow;
+                const vacationStartDate = new Date(vacation.startDate);
+                const vacationEndDate = new Date(vacation.endDate);
+                vacationEndDate.setDate(vacationEndDate.getDate() + 1); // Add one more day to the vacation end date
+                return (
+                  vacation.anesthesiologist === anesthesiologist &&
+                  vacationStartDate <= tomorrow &&
+                  vacationEndDate > tomorrow
+                );
               });
-              return !isOnVacationToday && !isOnVacationTomorrow;
+          
+              const wasOnFirstCallYesterday = schedules.some(schedule => {
+                const yesterday = new Date(date);
+                yesterday.setDate(yesterday.getDate() - 1);
+                return (
+                  schedule.call_type === 'first' &&
+                  schedule.anesthesiologist === anesthesiologist &&
+                  new Date(schedule.on_call_date).getTime() === yesterday.getTime()
+                );
+              });
+          
+              return !(isOnVacationToday || isOnVacationTomorrow || wasOnFirstCallYesterday);
             });
-          }          
-  
+          
+            console.log("new eligible anesthesiologists on date ", date, eligibleAnesthesiologists);
+          }
+          
           // Assign two anesthesiologists for first and second calls randomly
           while (onCallAnesthesiologists.length < 2) {
-              const randomAnesthesiologist = eligibleAnesthesiologists[Math.floor(Math.random() * eligibleAnesthesiologists.length)];
-              if (!onCallAnesthesiologists.includes(randomAnesthesiologist)) {
-                  onCallAnesthesiologists.unshift(randomAnesthesiologist);
-              }
+            const randomAnesthesiologist = eligibleAnesthesiologists[Math.floor(Math.random() * eligibleAnesthesiologists.length)];
+            
+            // Check if this anesthesiologist is already scheduled today
+            if (onCallAnesthesiologists.includes(randomAnesthesiologist)) {
+                continue;
+            }
+
+            // Check if this anesthesiologist was on first or second call on Friday
+            const wasOnFirstOrSecondCallFriday = schedules.some(schedule => {
+              const friday = new Date(date);
+              friday.setDate(friday.getDate() - 1);
+              return (
+                (schedule.call_type === 'first' || schedule.call_type === 'second') &&
+                schedule.anesthesiologist === randomAnesthesiologist &&
+                new Date(schedule.on_call_date).toISOString().split('T')[0] === friday.toISOString().split('T')[0]
+              );
+            });
+
+            if (wasOnFirstOrSecondCallFriday) {
+                continue;
+            }
+
+            onCallAnesthesiologists.unshift(randomAnesthesiologist);
           }
+
   
           onCallAnesthesiologists.forEach((anesthesiologist, index) => {
               if (index < 2) {
