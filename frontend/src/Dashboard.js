@@ -27,7 +27,8 @@ const Dashboard = ({selectedDate, setSelectedDate}) => {
                             A Roc'n tool for generating balanced random on-call scheduling for anesthesiologists <br></br>
                             Please add anesthesiologists first before assigning vacations or first calls. <br></br>
                             The random generator will keep track of the number of first and second calls for each anesthesiologist. <br></br>
-                            You may continue to generate a random schedule until you find an appropriate balance.
+                            You may continue to generate a random schedule until you find an appropriate balance. <br></br>
+                            Video Tutorial: <a href="https://youtu.be/xvgw42OE4ZQ" target="blank">YouTube PropOnDemand</a>
                         </p>
                     </div>
                 </div>
