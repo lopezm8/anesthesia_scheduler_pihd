@@ -199,7 +199,8 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
           anesthesiologist !== previousFirstCall &&
           anesthesiologist !== previousSecondCall
         );
-      }      
+      }
+      console.log(`here is the previousFirstCall on ${date} `, previousFirstCall);      
 
       eligibleAnesthesiologists = eligibleAnesthesiologists.filter(anesthesiologist => {
         return anesthesiologist !== previousSecondCall && anesthesiologist !== previousThirdCall;
@@ -522,6 +523,9 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
   firstCallAssignments = getState().schedule.firstCallAssignments;
   console.log("This is the first call assignments going into balance calls ", firstCallAssignments);
   balanceCalls(schedules, callCounts, firstCallAssignments);
+  schedules = adjustSchedule(schedules);
+  callCounts = tallyCalls(schedules);
+  balanceCalls(schedules, callCounts, firstCallAssignments);
   console.log("This is the schedule after balancing ", schedules);
   callCounts = tallyCalls(schedules);
   console.log('callCounts after balancing: ', callCounts);
@@ -739,4 +743,52 @@ function emptyCallCounts(anesthesiologists) {
   });
 
   return callCounts;
+}
+
+function adjustSchedule(schedule) {
+  let groupedSchedule = {};
+  schedule.forEach(s => {
+      if (!groupedSchedule[s.on_call_date]) {
+          groupedSchedule[s.on_call_date] = [];
+      }
+      groupedSchedule[s.on_call_date].push(s);
+  });
+
+  let previousFirstCall = null;
+  let dates = Object.keys(groupedSchedule).sort();
+
+  for (let i = 1; i < dates.length; i++) {
+      const currentDay = dates[i];
+      const previousDay = dates[i - 1];
+      let currentWeekday = new Date(currentDay).getDay();
+      let previousWeekday = new Date(previousDay).getDay();
+      
+      // Skip weekends
+      if (currentWeekday === 0 || currentWeekday === 6 || previousWeekday === 0 || previousWeekday === 6) {
+          continue;
+      }
+
+      // Find the first call from previous day
+      previousFirstCall = groupedSchedule[previousDay].find(s => s.call_type === 'first');
+
+      if (!previousFirstCall) continue;
+
+      // Remove on call scheduling after being first call
+      groupedSchedule[currentDay] = groupedSchedule[currentDay].filter(s => s.anesthesiologist !== previousFirstCall.anesthesiologist);
+
+      // If the second call was removed, reassign second call
+      if (!groupedSchedule[currentDay].some(s => s.call_type === 'second')) {
+          let thirdCall = groupedSchedule[currentDay].find(s => s.call_type === 'third');
+          if (thirdCall) {
+              thirdCall.call_type = 'second';
+          }
+      }
+  }
+
+  let adjustedSchedule = [];
+  dates.forEach(date => {
+      adjustedSchedule.push(...groupedSchedule[date]);
+  });
+
+  return adjustedSchedule;
 }
