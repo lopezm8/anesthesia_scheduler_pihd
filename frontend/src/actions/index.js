@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { FETCH_ANESTHESIOLOGISTS, ADD_ANESTHESIOLOGIST, SET_SCHEDULES, FETCH_SCHEDULES, SET_FIRST_CALL, SET_SELECTED_DATE, EDIT_VACATION, DELETE_VACATION } from './types';
 import { CLEAR_ANESTHESIOLOGIST_DATA, CLEAR_VACATION_DATA, CLEAR_FIRST_CALL_DATA } from './types';
+import { filter } from 'lodash';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -15,7 +16,29 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
 
 
   const anesthesiologists = getState().anesthesiologist;
-  const vacations = getState().vacations;
+  let vacations = getState().vacations;
+  console.log("start of vacations here in index.js: ", vacations);
+
+  const formattedVacations = vacations.map(vacation => {
+  const formattedStartDate = new Date(vacation.startDate);
+  const formattedEndDate = new Date(vacation.endDate);
+  formattedEndDate.setHours(0, 0, 0, 0);
+  formattedEndDate.setTime(formattedEndDate.getTime() + ONE_DAY_IN_MS);
+  formattedEndDate.setTime(formattedEndDate.getTime() + formattedStartDate.getTimezoneOffset() * 60 * 1000);
+
+  return {
+    ...vacation,
+    startDate: formattedStartDate,
+    endDate: formattedEndDate
+  };
+  });
+
+  console.log("Formatted vacations with extended end dates: ", formattedVacations);
+
+  vacations = formattedVacations;
+
+  console.log("Vacations after overwrite: ", vacations);
+  console.log("Formatted vacations: ", formattedVacations);
 
   // If the list of anesthesiologists is empty, dispatch an empty schedule
   if (!anesthesiologists || anesthesiologists.length === 0) {
@@ -126,9 +149,17 @@ export const generateRandomSchedule = (selectedMonth) => (dispatch, getState) =>
     console.log('anesthesiologists' , anesthesiologists);
     eligibleAnesthesiologists = anesthesiologists.filter(anesthesiologist => {
       const isOnVacation = vacations.some(vacation => {
-        return vacation.anesthesiologist === anesthesiologist &&
-              new Date(vacation.startDate) <= date &&
-              new Date(vacation.endDate) >= date;
+        const vacationStartDate = new Date(vacation.startDate);
+        const vacationEndDate = new Date(vacation.endDate);
+        const meetsCriteria = vacation.anesthesiologist === anesthesiologist &&
+                              vacationStartDate <= date &&
+                              vacationEndDate > date;
+    
+        if (meetsCriteria) {
+          console.log(`Filtered out: ${anesthesiologist} is on vacation from ${vacationStartDate} to ${vacationEndDate} for the date ${date}`);
+        }
+    
+        return meetsCriteria;
       });
       return !isOnVacation;
     });
