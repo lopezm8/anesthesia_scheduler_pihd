@@ -158,6 +158,22 @@ const ScheduleCalendar = ({ events, selectedDate }) => {
         currentWrapPointIndex++;
     }
 
+     // Appending Anesthesiologist callCounts
+    const callCounts = countCalls(events); 
+    let callCountsArray = [["Anesthesiologist", "First Calls", "Second Calls"]];
+
+    // Convert callCounts object to an array of arrays
+    for (let [name, counts] of Object.entries(callCounts)) {
+        callCountsArray.push([name, counts.first, counts.second]);
+    }
+
+    // Sort Anesthesiologists by alphabetical order
+    callCountsArray = callCountsArray.slice(0, 1).concat(callCountsArray.slice(1).sort((a, b) => a[0].localeCompare(b[0])));
+    finalExcelData.push([{}], [{}]);
+
+    // Append the callCounts to rest of the schedule
+    finalExcelData = finalExcelData.concat(callCountsArray);
+
     const ws = XLSX.utils.json_to_sheet(finalExcelData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Schedule");
