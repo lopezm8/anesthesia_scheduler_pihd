@@ -7,6 +7,8 @@ import { groupBy } from 'lodash';
 import './ScheduleCalendar.css'; 
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import * as FileSaver from 'file-saver';
+import * as XLSX from 'xlsx';
 const localizer = globalizeLocalizer(globalize);
 
 function countCalls(events) {
@@ -87,10 +89,94 @@ const ScheduleCalendar = ({ events, selectedDate }) => {
     setCurrentDate(date);
   };
 
+  const convertToExcel = () => {
+    // Group events by date
+    const groupedByDate = events.reduce((acc, event) => {
+        const dateKey = event.start.toISOString().split('T')[0];
+        if (!acc[dateKey]) {
+            acc[dateKey] = [];
+        }
+        acc[dateKey].push(event.title);
+        return acc;
+    }, {});
+
+    // Sort dates and prepare data for Excel
+    const sortedDates = Object.keys(groupedByDate).sort();
+
+    // Define wrapping of schedules on weekends
+    const wrapPoints = [];
+    for (let i = 0; i < sortedDates.length - 1; i++) {
+        const date = sortedDates[i];
+        const nextDate = sortedDates[i + 1];
+        const hasTwoOrFewer = groupedByDate[date].length <= 2;
+        const nextDayHasTwoOrFewer = groupedByDate[nextDate].length <= 2;
+
+        if (hasTwoOrFewer && nextDayHasTwoOrFewer) {
+            wrapPoints.push(date);
+            const dateObj = new Date(date);
+            dateObj.setDate(dateObj.getDate() + (7 - dateObj.getDay()));
+            i = sortedDates.indexOf(dateObj.toISOString().split('T')[0]);
+        }
+    }
+
+    let finalExcelData = [];
+    let startIndex = 0;
+    let currentWrapPointIndex = 0;
+
+    while (startIndex < sortedDates.length) {
+        const endIndex = wrapPoints[currentWrapPointIndex] ?
+            sortedDates.indexOf(wrapPoints[currentWrapPointIndex]) + 1 :
+            sortedDates.length;
+
+        const segmentDates = sortedDates.slice(startIndex, endIndex);
+        let segmentData = [{}];
+
+        segmentDates.forEach((date, index) => {
+            // Add headers and date rows
+            segmentData[0][index * 2] = date;
+            // Add anesthesiologist rows
+            groupedByDate[date].forEach((anesthesiologist, rowIndex) => {
+                if (!segmentData[rowIndex + 1]) {
+                    segmentData[rowIndex + 1] = {};
+                }
+                segmentData[rowIndex + 1][index * 2] = rowIndex + 1;
+                segmentData[rowIndex + 1][index * 2 + 1] = anesthesiologist;
+            });
+        });
+
+        const maxRows = Math.max(...segmentDates.map(date => groupedByDate[date].length)) + 1;
+        for (let row = 0; row < maxRows; row++) {
+            segmentData[row] = segmentData[row] || {};
+            for (let col = 0; col < segmentDates.length * 2; col++) {
+                segmentData[row][col] = segmentData[row][col] || '';
+            }
+        }
+
+        // Add blank row between weeks and continue
+        finalExcelData = finalExcelData.concat(segmentData, [{}]);
+        startIndex = endIndex;
+        currentWrapPointIndex++;
+    }
+
+    const ws = XLSX.utils.json_to_sheet(finalExcelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Schedule");
+
+    // Generate Excel file and download
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+    FileSaver.saveAs(data, 'schedule.xlsx');
+};
+  
   console.log('Rendered ScheduleCalendar with props:', { events, selectedDate });
   console.log('Calendar component events', events);
   return (
     <div id="divToPrint">
+      <div style={{ textAlign: 'center' }}>
+      <button className="button-list" onClick={convertToExcel}>Save as Excel Spreadsheet</button>
+    </div>
       <Calendar
         key={currentDate}
         localizer={localizer}
